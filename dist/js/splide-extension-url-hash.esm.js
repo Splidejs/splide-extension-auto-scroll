@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.2.0
+ * Version  : 0.2.1
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
@@ -20,7 +20,6 @@ function raf(func) {
 var EVENT_MOVE = "move";
 var EVENT_MOVED = "moved";
 var EVENT_DRAG = "drag";
-var EVENT_DRAGGED = "dragged";
 var EVENT_SCROLL = "scroll";
 var EVENT_SCROLLED = "scrolled";
 var EVENT_DESTROY = "destroy";
@@ -197,7 +196,7 @@ var DEFAULTS2 = {
 // src/js/extensions/AutoScroll/AutoScroll.ts
 function AutoScroll(Splide3, Components2, options) {
   const { on, bind } = EventInterface(Splide3);
-  const { translate, getPosition, toIndex, getLimit } = Components2.Move;
+  const { translate, getPosition, toIndex, getLimit, cancel } = Components2.Move;
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
   const interval = RequestInterval(0, update);
@@ -206,6 +205,7 @@ function AutoScroll(Splide3, Components2, options) {
   let paused;
   let hovered;
   let focused;
+  let busy;
   function mount() {
     listen();
     autoStart();
@@ -224,8 +224,14 @@ function AutoScroll(Splide3, Components2, options) {
         autoToggle();
       });
     }
-    on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], pause.bind(null, false));
-    on([EVENT_MOVED, EVENT_DRAGGED, EVENT_SCROLLED], autoToggle);
+    on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], () => {
+      busy = true;
+      pause(false);
+    });
+    on([EVENT_MOVED, EVENT_SCROLLED], () => {
+      busy = false;
+      autoToggle();
+    });
   }
   function autoStart() {
     if (autoScrollOptions.autoStart) {
@@ -249,7 +255,7 @@ function AutoScroll(Splide3, Components2, options) {
   }
   function autoToggle() {
     if (!paused) {
-      if (!hovered && !focused) {
+      if (!hovered && !focused && !busy) {
         play();
       } else {
         pause(false);
