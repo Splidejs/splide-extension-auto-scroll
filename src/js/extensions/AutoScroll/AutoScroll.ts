@@ -34,6 +34,7 @@ declare module '@splidejs/splide' {
  */
 export interface AutoScrollComponent extends BaseComponent {
   play(): void;
+
   pause(): void;
 }
 
@@ -49,13 +50,13 @@ export interface AutoScrollComponent extends BaseComponent {
  * @return An AutoScroll component object.
  */
 export function AutoScroll( Splide: Splide, Components: Components, options: Options ): AutoScrollComponent {
-	const { on, bind, emit } = EventInterface( Splide );
+  const { on, bind, emit } = EventInterface( Splide );
   const { translate, getPosition, toIndex, getLimit } = Components.Move;
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
   const interval = RequestInterval( Infinity, null, update );
   const { isPaused } = interval;
-  const autoScrollOptions = assign( {}, DEFAULTS, options.autoScroll || {} );
+  const autoScrollOptions  = assign( {}, DEFAULTS, options.autoScroll || {} );
 
   /**
    * Turns into `true` when the auto scroll is manually paused.
@@ -72,13 +73,13 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    */
   let focused: boolean;
 
-	/**
-	 * Called when the component is mounted.
-	 */
-	function mount(): void {
+  /**
+   * Called when the component is mounted.
+   */
+  function mount(): void {
     listen();
     play();
-	}
+  }
 
   /**
    * Listens to some events.
@@ -187,9 +188,9 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
     }
   }
 
-	return {
-		mount,
+  return {
+    mount,
     play,
     pause,
-	}
+  };
 }

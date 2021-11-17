@@ -10,4 +10,4 @@ export const DEFAULTS: AutoScrollOptions = {
   speed       : 1,
   pauseOnHover: true,
   pauseOnFocus: true,
-}
+};
