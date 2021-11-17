@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.1.0
+ * Version  : 0.2.0
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
@@ -193,17 +193,18 @@ function clamp2(number, x, y) {
 // src/js/constants/defaults.ts
 var DEFAULTS2 = {
   speed: 1,
+  autoStart: true,
   pauseOnHover: true,
   pauseOnFocus: true
 };
 
 // src/js/extensions/AutoScroll/AutoScroll.ts
 function AutoScroll(Splide3, Components2, options) {
-  const { on, bind, emit } = EventInterface(Splide3);
+  const { on, bind } = EventInterface(Splide3);
   const { translate, getPosition, toIndex, getLimit } = Components2.Move;
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
-  const interval = RequestInterval(Infinity, null, update);
+  const interval = RequestInterval(0, update);
   const { isPaused } = interval;
   const autoScrollOptions = assign2({}, DEFAULTS2, options.autoScroll || {});
   let paused;
@@ -211,7 +212,7 @@ function AutoScroll(Splide3, Components2, options) {
   let focused;
   function mount() {
     listen();
-    play();
+    autoStart();
   }
   function listen() {
     const { root } = Splide3;
@@ -227,18 +228,26 @@ function AutoScroll(Splide3, Components2, options) {
         autoToggle();
       });
     }
-    on([EVENT_MOVE, EVENT_MOVED, EVENT_DRAG, EVENT_DRAGGED, EVENT_SCROLL, EVENT_SCROLLED], autoToggle);
+    on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], pause.bind(null, false));
+    on([EVENT_MOVED, EVENT_DRAGGED, EVENT_SCROLLED], autoToggle);
+  }
+  function autoStart() {
+    if (autoScrollOptions.autoStart) {
+      if (document.readyState === "complete") {
+        play();
+      } else {
+        bind(window, "load", play);
+      }
+    }
   }
   function play() {
     if (isPaused()) {
       interval.start(true);
-      emit(EVENT_SCROLL);
     }
   }
   function pause(manual = true) {
     if (!isPaused()) {
       interval.pause();
-      emit(EVENT_SCROLLED);
     }
     paused = manual;
   }
@@ -257,6 +266,11 @@ function AutoScroll(Splide3, Components2, options) {
     if (position !== destination) {
       translate(destination);
       updateIndex(destination);
+    } else {
+      pause(false);
+      if (autoScrollOptions.rewind) {
+        Splide3.go(0);
+      }
     }
   }
   function computeDestination(position) {
@@ -272,8 +286,8 @@ function AutoScroll(Splide3, Components2, options) {
     const index = (toIndex(position) + length) % length;
     if (index !== getIndex()) {
       setIndex(index);
-      emit(EVENT_SCROLLED);
-      emit(EVENT_SCROLL);
+      Components2.Slides.update();
+      Components2.Pagination.update();
     }
   }
   return {
@@ -284,7 +298,7 @@ function AutoScroll(Splide3, Components2, options) {
 }
 /*!
  * Splide.js
- * Version  : 3.5.0
+ * Version  : 3.5.3
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */

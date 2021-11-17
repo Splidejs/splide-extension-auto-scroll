@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.1.0
+ * Version  : 0.2.0
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
@@ -221,6 +221,7 @@
 
   var DEFAULTS2 = {
     speed: 1,
+    autoStart: true,
     pauseOnHover: true,
     pauseOnFocus: true
   };
@@ -228,8 +229,7 @@
   function AutoScroll(Splide3, Components2, options) {
     var _EventInterface = EventInterface(Splide3),
         on = _EventInterface.on,
-        bind = _EventInterface.bind,
-        emit = _EventInterface.emit;
+        bind = _EventInterface.bind;
 
     var _Components2$Move = Components2.Move,
         translate = _Components2$Move.translate,
@@ -240,7 +240,7 @@
         setIndex = _Components2$Controll.setIndex,
         getIndex = _Components2$Controll.getIndex;
     var orient = Components2.Direction.orient;
-    var interval = RequestInterval(Infinity, null, update);
+    var interval = RequestInterval(0, update);
     var isPaused = interval.isPaused;
     var autoScrollOptions = assign2({}, DEFAULTS2, options.autoScroll || {});
     var paused;
@@ -249,7 +249,7 @@
 
     function mount() {
       listen();
-      play();
+      autoStart();
     }
 
     function listen() {
@@ -269,13 +269,23 @@
         });
       }
 
-      on([EVENT_MOVE, EVENT_MOVED, EVENT_DRAG, EVENT_DRAGGED, EVENT_SCROLL, EVENT_SCROLLED], autoToggle);
+      on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], pause.bind(null, false));
+      on([EVENT_MOVED, EVENT_DRAGGED, EVENT_SCROLLED], autoToggle);
+    }
+
+    function autoStart() {
+      if (autoScrollOptions.autoStart) {
+        if (document.readyState === "complete") {
+          play();
+        } else {
+          bind(window, "load", play);
+        }
+      }
     }
 
     function play() {
       if (isPaused()) {
         interval.start(true);
-        emit(EVENT_SCROLL);
       }
     }
 
@@ -286,7 +296,6 @@
 
       if (!isPaused()) {
         interval.pause();
-        emit(EVENT_SCROLLED);
       }
 
       paused = manual;
@@ -309,6 +318,12 @@
       if (position !== destination) {
         translate(destination);
         updateIndex(destination);
+      } else {
+        pause(false);
+
+        if (autoScrollOptions.rewind) {
+          Splide3.go(0);
+        }
       }
     }
 
@@ -331,8 +346,8 @@
 
       if (index !== getIndex()) {
         setIndex(index);
-        emit(EVENT_SCROLLED);
-        emit(EVENT_SCROLL);
+        Components2.Slides.update();
+        Components2.Pagination.update();
       }
     }
 
@@ -350,7 +365,7 @@
   }
   /*!
    * Splide.js
-   * Version  : 3.5.0
+   * Version  : 3.5.3
    * License  : MIT
    * Copyright: 2021 Naotoshi Fujita
    */

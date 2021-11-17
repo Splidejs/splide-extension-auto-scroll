@@ -10,6 +10,16 @@ export interface AutoScrollOptions {
   speed?: number;
 
   /**
+   * Determines whether to start scrolling the slider after initialization.
+   */
+  autoStart?: boolean;
+
+  /**
+   * Determines whether to rewind the slider when it reaches the end.
+   */
+  rewind?: boolean;
+
+  /**
    * Determines whether to pause the auto scroll when the cursor is on the slider.
    */
   pauseOnHover?: boolean;

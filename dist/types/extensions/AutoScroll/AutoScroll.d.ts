@@ -1,11 +1,14 @@
 import { BaseComponent, Components, Options, Splide } from '@splidejs/splide';
 import { AutoScrollOptions } from '../../types/options';
 /**
- * Lets the compiler know the type of auto scroll options.
+ * Lets the compiler know this component.
  */
 declare module '@splidejs/splide' {
     interface Options {
         autoScroll?: AutoScrollOptions;
+    }
+    interface Components {
+        AutoScroll?: AutoScrollComponent;
     }
 }
 /**

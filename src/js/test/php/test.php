@@ -14,15 +14,21 @@
 			var splide = new Splide( '#splide01', {
 				width  : 600,
 				height : 300,
+        // perPage: 2,
 				gap    : '1rem',
-        // type   : 'loop',
-        drag   : 'free',
         autoScroll: {
-          speed: 1,
+          // autoStart: false,
+          speed: 2,
+          rewind: true,
         }
 			} );
 
+      // splide.Components.AutoScroll.play();
+
 			splide.mount( window.splide.Extensions );
+
+      // splide.on( 'scroll', () => console.log( 'scroll' ) );
+      // splide.on( 'scrolled', () => console.log( 'scrolled' ) );
 		} );
 	</script>
 
@@ -33,7 +39,12 @@
 			justify-content: center;
 			font-size: 4rem;
       background: #eee;
+      border: 2px solid transparent;
 		}
+
+    .splide__slide.is-active {
+      border: 2px solid skyblue;
+    }
 	</style>
 </head>
 <body>

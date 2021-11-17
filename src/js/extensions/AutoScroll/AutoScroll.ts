@@ -19,11 +19,15 @@ import { AutoScrollOptions } from '../../types/options';
 
 
 /**
- * Lets the compiler know the type of auto scroll options.
+ * Lets the compiler know this component.
  */
 declare module '@splidejs/splide' {
   interface Options {
     autoScroll?: AutoScrollOptions;
+  }
+
+  interface Components {
+    AutoScroll?: AutoScrollComponent;
   }
 }
 
@@ -49,11 +53,11 @@ export interface AutoScrollComponent extends BaseComponent {
  * @return An AutoScroll component object.
  */
 export function AutoScroll( Splide: Splide, Components: Components, options: Options ): AutoScrollComponent {
-  const { on, bind, emit } = EventInterface( Splide );
+  const { on, bind } = EventInterface( Splide );
   const { translate, getPosition, toIndex, getLimit } = Components.Move;
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
-  const interval = RequestInterval( Infinity, null, update );
+  const interval = RequestInterval( 0, update );
   const { isPaused } = interval;
   const autoScrollOptions  = assign( {}, DEFAULTS, options.autoScroll || {} );
 
@@ -77,7 +81,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    */
   function mount(): void {
     listen();
-    play();
+    autoStart();
   }
 
   /**
@@ -100,7 +104,21 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       } );
     }
 
-    on( [ EVENT_MOVE, EVENT_MOVED, EVENT_DRAG, EVENT_DRAGGED, EVENT_SCROLL, EVENT_SCROLLED ], autoToggle );
+    on( [ EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL ], pause.bind( null, false ) );
+    on( [ EVENT_MOVED, EVENT_DRAGGED, EVENT_SCROLLED ], autoToggle );
+  }
+
+  /**
+   * Starts scrolling the slider on the proper timing.
+   */
+  function autoStart(): void {
+    if ( autoScrollOptions.autoStart ) {
+      if ( document.readyState === 'complete' ) {
+        play();
+      } else {
+        bind( window, 'load', play );
+      }
+    }
   }
 
   /**
@@ -109,7 +127,6 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   function play(): void {
     if ( isPaused() ) {
       interval.start( true );
-      emit( EVENT_SCROLL );
     }
   }
 
@@ -121,7 +138,6 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   function pause( manual = true ): void {
     if ( ! isPaused() ) {
       interval.pause();
-      emit( EVENT_SCROLLED );
     }
 
     paused = manual;
@@ -150,6 +166,12 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
     if ( position !== destination ) {
       translate( destination );
       updateIndex( destination );
+    } else {
+      pause( false );
+
+      if ( autoScrollOptions.rewind ) {
+        Splide.go( 0 );
+      }
     }
   }
 
@@ -182,8 +204,8 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
 
     if ( index !== getIndex() ) {
       setIndex( index );
-      emit( EVENT_SCROLLED );
-      emit( EVENT_SCROLL );
+      Components.Slides.update();
+      Components.Pagination.update();
     }
   }
 

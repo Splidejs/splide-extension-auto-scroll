@@ -10,18 +10,19 @@
     "noImplicitAny": true,
     "suppressImplicitAnyIndexErrors": true,
     "allowJs": false,
-		"declarationDir": "./dist/types",
-		"declaration"   : true,
-		"declarationMap": true,
+    "declarationDir": "./dist/types",
+    "declaration": true,
+    "declarationMap": true,
     "lib": [
       "dom",
       "es6"
-    ],
+    ]
   },
   "include": [
     "src/js/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "src/js/**/*.test.ts"
   ]
 }

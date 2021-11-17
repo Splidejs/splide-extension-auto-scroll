@@ -8,6 +8,7 @@ import { AutoScrollOptions } from '../types/options';
  */
 export const DEFAULTS: AutoScrollOptions = {
   speed       : 1,
+  autoStart   : true,
   pauseOnHover: true,
   pauseOnFocus: true,
 };

@@ -16,7 +16,7 @@ function buildScript( compress ) {
       resolve(),
       esbuild( { minify: false, experimentalBundling: true } ),
       babel.getBabelOutputPlugin( {
-        configFile     : path.resolve( __dirname, '../.babelrc' ),
+        configFile     : path.resolve( __dirname, '../babel.config.js' ),
         allowAllFormats: true,
       } ),
 	    esbuild( { minify: compress } ),
