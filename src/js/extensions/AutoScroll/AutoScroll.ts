@@ -53,7 +53,7 @@ export interface AutoScrollComponent extends BaseComponent {
  */
 export function AutoScroll( Splide: Splide, Components: Components, options: Options ): AutoScrollComponent {
   const { on, bind } = EventInterface( Splide );
-  const { translate, getPosition, toIndex, getLimit, cancel } = Components.Move;
+  const { translate, getPosition, toIndex, getLimit } = Components.Move;
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
   const interval = RequestInterval( 0, update );

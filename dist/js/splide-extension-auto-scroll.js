@@ -234,8 +234,7 @@
         translate = _Components2$Move.translate,
         getPosition = _Components2$Move.getPosition,
         toIndex = _Components2$Move.toIndex,
-        getLimit = _Components2$Move.getLimit,
-        cancel = _Components2$Move.cancel;
+        getLimit = _Components2$Move.getLimit;
     var _Components2$Controll = Components2.Controller,
         setIndex = _Components2$Controll.setIndex,
         getIndex = _Components2$Controll.getIndex;

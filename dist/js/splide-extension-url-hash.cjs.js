@@ -200,7 +200,7 @@ var DEFAULTS2 = {
 // src/js/extensions/AutoScroll/AutoScroll.ts
 function AutoScroll(Splide3, Components2, options) {
   const { on, bind } = EventInterface(Splide3);
-  const { translate, getPosition, toIndex, getLimit, cancel } = Components2.Move;
+  const { translate, getPosition, toIndex, getLimit } = Components2.Move;
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
   const interval = RequestInterval(0, update);
