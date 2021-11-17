@@ -16,6 +16,7 @@
 				height : 300,
         // perPage: 2,
 				gap    : '1rem',
+        drag   : 'free',
         autoScroll: {
           // autoStart: false,
           speed: 2,

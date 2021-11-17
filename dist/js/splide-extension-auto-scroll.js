@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.2.0
+ * Version  : 0.1.0
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
@@ -28,7 +28,6 @@
   var EVENT_MOVE = "move";
   var EVENT_MOVED = "moved";
   var EVENT_DRAG = "drag";
-  var EVENT_DRAGGED = "dragged";
   var EVENT_SCROLL = "scroll";
   var EVENT_SCROLLED = "scrolled";
   var EVENT_DESTROY = "destroy";
@@ -235,7 +234,8 @@
         translate = _Components2$Move.translate,
         getPosition = _Components2$Move.getPosition,
         toIndex = _Components2$Move.toIndex,
-        getLimit = _Components2$Move.getLimit;
+        getLimit = _Components2$Move.getLimit,
+        cancel = _Components2$Move.cancel;
     var _Components2$Controll = Components2.Controller,
         setIndex = _Components2$Controll.setIndex,
         getIndex = _Components2$Controll.getIndex;
@@ -246,6 +246,7 @@
     var paused;
     var hovered;
     var focused;
+    var busy;
 
     function mount() {
       listen();
@@ -269,8 +270,14 @@
         });
       }
 
-      on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], pause.bind(null, false));
-      on([EVENT_MOVED, EVENT_DRAGGED, EVENT_SCROLLED], autoToggle);
+      on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], function () {
+        busy = true;
+        pause(false);
+      });
+      on([EVENT_MOVED, EVENT_SCROLLED], function () {
+        busy = false;
+        autoToggle();
+      });
     }
 
     function autoStart() {
@@ -303,7 +310,7 @@
 
     function autoToggle() {
       if (!paused) {
-        if (!hovered && !focused) {
+        if (!hovered && !focused && !busy) {
           play();
         } else {
           pause(false);

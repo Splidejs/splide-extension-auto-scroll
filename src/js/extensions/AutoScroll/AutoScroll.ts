@@ -2,7 +2,6 @@ import {
   BaseComponent,
   Components,
   EVENT_DRAG,
-  EVENT_DRAGGED,
   EVENT_MOVE,
   EVENT_MOVED,
   EVENT_SCROLL,
@@ -54,7 +53,7 @@ export interface AutoScrollComponent extends BaseComponent {
  */
 export function AutoScroll( Splide: Splide, Components: Components, options: Options ): AutoScrollComponent {
   const { on, bind } = EventInterface( Splide );
-  const { translate, getPosition, toIndex, getLimit } = Components.Move;
+  const { translate, getPosition, toIndex, getLimit, cancel } = Components.Move;
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
   const interval = RequestInterval( 0, update );
@@ -75,6 +74,11 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    * Indicates whether the slider contains active element or not.
    */
   let focused: boolean;
+
+  /**
+   * Indicates whether the slider is currently busy or not.
+   */
+  let busy: boolean;
 
   /**
    * Called when the component is mounted.
@@ -104,8 +108,15 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       } );
     }
 
-    on( [ EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL ], pause.bind( null, false ) );
-    on( [ EVENT_MOVED, EVENT_DRAGGED, EVENT_SCROLLED ], autoToggle );
+    on( [ EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL ], () => {
+      busy = true;
+      pause( false );
+    } );
+
+    on( [ EVENT_MOVED, EVENT_SCROLLED ], () => {
+      busy = false;
+      autoToggle();
+    } );
   }
 
   /**
@@ -148,7 +159,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    */
   function autoToggle(): void {
     if ( ! paused ) {
-      if ( ! hovered && ! focused ) {
+      if ( ! hovered && ! focused && ! busy ) {
         play();
       } else {
         pause( false );
