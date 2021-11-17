@@ -2,7 +2,7 @@ const rollup  = require( 'rollup' ).rollup;
 const resolve = require( '@rollup/plugin-node-resolve' ).nodeResolve;
 const esbuild = require( 'rollup-plugin-esbuild' );
 const banner  = require( './constants/banner' );
-const name    = 'splide-extension-url-hash';
+const name    = 'splide-extension-auto-scroll';
 
 
 function buildModule( type ) {
