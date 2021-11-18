@@ -12,7 +12,7 @@ The extension for continuously scrolling the <a href="https://github.com/Splidej
 <p>
   <a href="https://splidejs.com/extensions/auto-scroll/#overview">Demo</a>
   <br>
-  <a href="https://splidejs.com/extensions/auto-scroll/">Getting Started</a>
+  <a href="https://splidejs.com/extensions/auto-scroll/#installation">Getting Started</a>
   <br>
   <a href="https://splidejs.com/extensions/auto-scroll/#options">Options</a>
   <br>
