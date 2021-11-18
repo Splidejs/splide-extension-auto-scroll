@@ -8,15 +8,27 @@
 <p>
 The extension for continuously scrolling the <a href="https://github.com/Splidejs/splide">Splide</a> slider.
 </p>
+
+<p>
+  <a href="https://splidejs.com/extensions/auto-scroll/#overview">Demo</a>
+  <br>
+  <a href="https://splidejs.com/extensions/auto-scroll/">Getting Started</a>
+  <br>
+  <a href="https://splidejs.com/extensions/auto-scroll/#options">Options</a>
+  <br>
+  <a href="https://splidejs.com/">Splide</a>
+</p>
 </div>
 
-## Notice
+## Packages
 
-This extension is still on WIP status.
+The package is available on NPM and [jsDelivr](https://www.jsdelivr.com/package/npm/@splidejs/splide-extension-auto-scroll).
 
 ```
 $ npm install @splidejs/splide-extension-auto-scroll
 ```
+
+Or download files from the dist directory.
 
 ## License
 Splide is released under the MIT license.
