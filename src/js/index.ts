@@ -1,1 +1,1 @@
-export { AutoScroll } from './extensions';
+export { AutoScroll, AutoScrollComponent } from './extensions';
