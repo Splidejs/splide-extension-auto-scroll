@@ -5,7 +5,7 @@ import { AutoScrollOptions } from '../../types/options';
  */
 declare module '@splidejs/splide' {
     interface Options {
-        autoScroll?: AutoScrollOptions;
+        autoScroll?: AutoScrollOptions | boolean;
     }
     interface Components {
         AutoScroll?: AutoScrollComponent;

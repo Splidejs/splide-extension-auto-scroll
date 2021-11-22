@@ -1,6 +1,6 @@
 {
   "name": "@splidejs/splide-extension-auto-scroll",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "The Splide extension for continuously scrolling the slider.",
   "author": "Naotoshi Fujita",
   "license": "MIT",
@@ -29,7 +29,7 @@
     "@babel/preset-env": "^7.15.4",
     "@rollup/plugin-babel": "^5.3.0",
     "@rollup/plugin-node-resolve": "^13.0.4",
-    "@splidejs/splide": "^3.5.3",
+    "@splidejs/splide": "^3.6.1",
     "@types/jest": "^27.0.1",
     "@typescript-eslint/eslint-plugin": "^4.30.0",
     "@typescript-eslint/parser": "^4.30.0",

@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.2.2
+ * Version  : 0.3.0
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
@@ -23,6 +23,7 @@ function raf(func) {
 }
 var EVENT_MOVE = "move";
 var EVENT_MOVED = "moved";
+var EVENT_UPDATED = "updated";
 var EVENT_DRAG = "drag";
 var EVENT_SCROLL = "scroll";
 var EVENT_SCROLLED = "scrolled";
@@ -144,6 +145,17 @@ function RequestInterval(interval, onInterval, onUpdate, limit) {
 // node_modules/@splidejs/splide/src/js/constants/types.ts
 var SLIDE2 = "slide";
 
+// node_modules/@splidejs/splide/src/js/utils/type/type.ts
+function isObject2(subject) {
+  return !isNull2(subject) && typeof subject === "object";
+}
+function isUndefined2(subject) {
+  return typeof subject === "undefined";
+}
+function isNull2(subject) {
+  return subject === null;
+}
+
 // node_modules/@splidejs/splide/src/js/utils/array/index.ts
 var arrayProto2 = Array.prototype;
 
@@ -199,20 +211,35 @@ var DEFAULTS2 = {
 
 // src/js/extensions/AutoScroll/AutoScroll.ts
 function AutoScroll(Splide3, Components2, options) {
-  const { on, bind } = EventInterface(Splide3);
+  const { on, bind, off } = EventInterface(Splide3);
   const { translate, getPosition, toIndex, getLimit } = Components2.Move;
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
-  const interval = RequestInterval(0, update);
-  const { isPaused } = interval;
-  const autoScrollOptions = assign2({}, DEFAULTS2, options.autoScroll || {});
+  let autoScrollOptions = {};
+  let interval;
   let paused;
   let hovered;
   let focused;
   let busy;
+  let currPosition;
+  function setup() {
+    const { autoScroll } = options;
+    autoScrollOptions = assign2({}, DEFAULTS2, isObject2(autoScroll) ? autoScroll : {});
+  }
   function mount() {
-    listen();
-    autoStart();
+    if (options.autoScroll !== false) {
+      interval = RequestInterval(0, update);
+      listen();
+      autoStart();
+    }
+  }
+  function destroy() {
+    if (interval) {
+      interval.cancel();
+      interval = null;
+      currPosition = void 0;
+      off([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL, EVENT_MOVED, EVENT_SCROLLED]);
+    }
   }
   function listen() {
     const { root } = Splide3;
@@ -228,6 +255,7 @@ function AutoScroll(Splide3, Components2, options) {
         autoToggle();
       });
     }
+    on(EVENT_UPDATED, onUpdate);
     on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], () => {
       busy = true;
       pause(false);
@@ -236,6 +264,18 @@ function AutoScroll(Splide3, Components2, options) {
       busy = false;
       autoToggle();
     });
+  }
+  function onUpdate() {
+    const { autoScroll } = options;
+    if (autoScroll !== false) {
+      autoScrollOptions = assign2(autoScrollOptions, isObject2(autoScroll) ? autoScroll : {});
+      !interval && mount();
+    } else {
+      destroy();
+    }
+    if (interval && !isUndefined2(currPosition)) {
+      translate(currPosition);
+    }
   }
   function autoStart() {
     if (autoScrollOptions.autoStart) {
@@ -247,12 +287,12 @@ function AutoScroll(Splide3, Components2, options) {
     }
   }
   function play() {
-    if (isPaused()) {
+    if (interval && interval.isPaused()) {
       interval.start(true);
     }
   }
   function pause(manual = true) {
-    if (!isPaused()) {
+    if (interval && !interval.isPaused()) {
       interval.pause();
     }
     paused = manual;
@@ -272,6 +312,7 @@ function AutoScroll(Splide3, Components2, options) {
     if (position !== destination) {
       translate(destination);
       updateIndex(destination);
+      currPosition = destination;
     } else {
       pause(false);
       if (autoScrollOptions.rewind) {
@@ -280,7 +321,7 @@ function AutoScroll(Splide3, Components2, options) {
     }
   }
   function computeDestination(position) {
-    const speed = options.autoScroll?.speed || 1;
+    const speed = autoScrollOptions.speed || 1;
     position += orient(speed);
     if (Splide3.is(SLIDE2)) {
       position = clamp2(position, getLimit(false), getLimit(true));
@@ -297,14 +338,16 @@ function AutoScroll(Splide3, Components2, options) {
     }
   }
   return {
+    setup,
     mount,
+    destroy,
     play,
     pause
   };
 }
 /*!
  * Splide.js
- * Version  : 3.5.3
+ * Version  : 3.6.1
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */

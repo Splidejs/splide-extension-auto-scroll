@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.2.2
+ * Version  : 0.3.0
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
@@ -27,6 +27,7 @@
 
   var EVENT_MOVE = "move";
   var EVENT_MOVED = "moved";
+  var EVENT_UPDATED = "updated";
   var EVENT_DRAG = "drag";
   var EVENT_SCROLL = "scroll";
   var EVENT_SCROLLED = "scrolled";
@@ -172,6 +173,19 @@
   }
 
   var SLIDE2 = "slide";
+
+  function isObject2(subject) {
+    return !isNull2(subject) && typeof subject === "object";
+  }
+
+  function isUndefined2(subject) {
+    return typeof subject === "undefined";
+  }
+
+  function isNull2(subject) {
+    return subject === null;
+  }
+
   var arrayProto2 = Array.prototype;
 
   function slice2(arrayLike, start, end) {
@@ -228,7 +242,8 @@
   function AutoScroll(Splide3, Components2, options) {
     var _EventInterface = EventInterface(Splide3),
         on = _EventInterface.on,
-        bind = _EventInterface.bind;
+        bind = _EventInterface.bind,
+        off = _EventInterface.off;
 
     var _Components2$Move = Components2.Move,
         translate = _Components2$Move.translate,
@@ -239,17 +254,34 @@
         setIndex = _Components2$Controll.setIndex,
         getIndex = _Components2$Controll.getIndex;
     var orient = Components2.Direction.orient;
-    var interval = RequestInterval(0, update);
-    var isPaused = interval.isPaused;
-    var autoScrollOptions = assign2({}, DEFAULTS2, options.autoScroll || {});
+    var autoScrollOptions = {};
+    var interval;
     var paused;
     var hovered;
     var focused;
     var busy;
+    var currPosition;
+
+    function setup() {
+      var autoScroll = options.autoScroll;
+      autoScrollOptions = assign2({}, DEFAULTS2, isObject2(autoScroll) ? autoScroll : {});
+    }
 
     function mount() {
-      listen();
-      autoStart();
+      if (options.autoScroll !== false) {
+        interval = RequestInterval(0, update);
+        listen();
+        autoStart();
+      }
+    }
+
+    function destroy() {
+      if (interval) {
+        interval.cancel();
+        interval = null;
+        currPosition = void 0;
+        off([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL, EVENT_MOVED, EVENT_SCROLLED]);
+      }
     }
 
     function listen() {
@@ -269,6 +301,7 @@
         });
       }
 
+      on(EVENT_UPDATED, onUpdate);
       on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], function () {
         busy = true;
         pause(false);
@@ -277,6 +310,21 @@
         busy = false;
         autoToggle();
       });
+    }
+
+    function onUpdate() {
+      var autoScroll = options.autoScroll;
+
+      if (autoScroll !== false) {
+        autoScrollOptions = assign2(autoScrollOptions, isObject2(autoScroll) ? autoScroll : {});
+        !interval && mount();
+      } else {
+        destroy();
+      }
+
+      if (interval && !isUndefined2(currPosition)) {
+        translate(currPosition);
+      }
     }
 
     function autoStart() {
@@ -290,7 +338,7 @@
     }
 
     function play() {
-      if (isPaused()) {
+      if (interval && interval.isPaused()) {
         interval.start(true);
       }
     }
@@ -300,7 +348,7 @@
         manual = true;
       }
 
-      if (!isPaused()) {
+      if (interval && !interval.isPaused()) {
         interval.pause();
       }
 
@@ -324,6 +372,7 @@
       if (position !== destination) {
         translate(destination);
         updateIndex(destination);
+        currPosition = destination;
       } else {
         pause(false);
 
@@ -334,9 +383,7 @@
     }
 
     function computeDestination(position) {
-      var _a;
-
-      var speed = ((_a = options.autoScroll) == null ? void 0 : _a.speed) || 1;
+      var speed = autoScrollOptions.speed || 1;
       position += orient(speed);
 
       if (Splide3.is(SLIDE2)) {
@@ -358,7 +405,9 @@
     }
 
     return {
+      setup: setup,
       mount: mount,
+      destroy: destroy,
       play: play,
       pause: pause
     };
@@ -371,7 +420,7 @@
   }
   /*!
    * Splide.js
-   * Version  : 3.5.3
+   * Version  : 3.6.1
    * License  : MIT
    * Copyright: 2021 Naotoshi Fujita
    */

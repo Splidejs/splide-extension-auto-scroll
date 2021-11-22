@@ -6,13 +6,15 @@ import {
   EVENT_MOVED,
   EVENT_SCROLL,
   EVENT_SCROLLED,
+  EVENT_UPDATED,
   EventInterface,
   Options,
   RequestInterval,
+  RequestIntervalInterface,
   Splide,
 } from '@splidejs/splide';
 import { SLIDE } from '@splidejs/splide/src/js/constants/types';
-import { assign, clamp } from '@splidejs/splide/src/js/utils';
+import { assign, clamp, isObject, isUndefined } from '@splidejs/splide/src/js/utils';
 import { DEFAULTS } from '../../constants/defaults';
 import { AutoScrollOptions } from '../../types/options';
 
@@ -22,7 +24,7 @@ import { AutoScrollOptions } from '../../types/options';
  */
 declare module '@splidejs/splide' {
   interface Options {
-    autoScroll?: AutoScrollOptions;
+    autoScroll?: AutoScrollOptions | boolean;
   }
 
   interface Components {
@@ -52,13 +54,20 @@ export interface AutoScrollComponent extends BaseComponent {
  * @return An AutoScroll component object.
  */
 export function AutoScroll( Splide: Splide, Components: Components, options: Options ): AutoScrollComponent {
-  const { on, bind } = EventInterface( Splide );
+  const { on, bind, off } = EventInterface( Splide );
   const { translate, getPosition, toIndex, getLimit } = Components.Move;
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
-  const interval = RequestInterval( 0, update );
-  const { isPaused } = interval;
-  const autoScrollOptions  = assign( {}, DEFAULTS, options.autoScroll || {} );
+
+  /**
+   * Keeps the latest options.
+   */
+  let autoScrollOptions: AutoScrollOptions = {};
+
+  /**
+   * The RequestInterval object.
+   */
+  let interval: RequestIntervalInterface;
 
   /**
    * Turns into `true` when the auto scroll is manually paused.
@@ -81,11 +90,40 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   let busy: boolean;
 
   /**
+   * Keeps the current position to restore.
+   */
+  let currPosition: number;
+
+  /**
+   * Sets up the component.
+   */
+  function setup(): void {
+    const { autoScroll } = options;
+    autoScrollOptions = assign( {}, DEFAULTS, isObject( autoScroll ) ? autoScroll : {} );
+  }
+
+  /**
    * Called when the component is mounted.
    */
   function mount(): void {
-    listen();
-    autoStart();
+    if ( options.autoScroll !== false ) {
+      interval = RequestInterval( 0, update );
+      listen();
+      autoStart();
+    }
+  }
+
+  /**
+   * Destroys the component.
+   */
+  function destroy(): void {
+    if ( interval ) {
+      interval.cancel();
+      interval = null;
+
+      currPosition = undefined;
+      off( [ EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL, EVENT_MOVED, EVENT_SCROLLED ] );
+    }
   }
 
   /**
@@ -108,6 +146,8 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       } );
     }
 
+    on( EVENT_UPDATED, onUpdate );
+
     on( [ EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL ], () => {
       busy = true;
       pause( false );
@@ -117,6 +157,24 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       busy = false;
       autoToggle();
     } );
+  }
+
+  /**
+   * Called when the slider is updated.
+   */
+  function onUpdate(): void {
+    const { autoScroll } = options;
+
+    if ( autoScroll !== false ) {
+      autoScrollOptions = assign( autoScrollOptions, isObject( autoScroll ) ? autoScroll : {} );
+      ! interval && mount();
+    } else {
+      destroy();
+    }
+
+    if ( interval && ! isUndefined( currPosition ) ) {
+      translate( currPosition );
+    }
   }
 
   /**
@@ -136,7 +194,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    * Starts auto scroll.
    */
   function play(): void {
-    if ( isPaused() ) {
+    if ( interval && interval.isPaused() ) {
       interval.start( true );
     }
   }
@@ -147,7 +205,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    * @param manual - Optional. If `true`, auto scroll will never restart without calling `play()`.
    */
   function pause( manual = true ): void {
-    if ( ! isPaused() ) {
+    if ( interval && ! interval.isPaused() ) {
       interval.pause();
     }
 
@@ -177,6 +235,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
     if ( position !== destination ) {
       translate( destination );
       updateIndex( destination );
+      currPosition = destination;
     } else {
       pause( false );
 
@@ -194,7 +253,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    * @return A computed destination.
    */
   function computeDestination( position: number ): number {
-    const speed = options.autoScroll?.speed || 1;
+    const speed = autoScrollOptions.speed || 1;
     position += orient( speed );
 
     if ( Splide.is( SLIDE ) ) {
@@ -221,7 +280,9 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   }
 
   return {
+    setup,
     mount,
+    destroy,
     play,
     pause,
   };

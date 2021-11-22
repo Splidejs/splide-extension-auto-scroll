@@ -21,6 +21,16 @@
           // autoStart: false,
           speed: 2,
           rewind: true,
+        },
+        breakpoints: {
+          1000: {
+            autoScroll: {
+              speed: 5,
+            },
+          },
+          900: {
+            autoScroll: false,
+          }
         }
 			} );
 
