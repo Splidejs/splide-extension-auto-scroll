@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.3.0
+ * Version  : 0.3.1
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
@@ -242,8 +242,9 @@
   function AutoScroll(Splide3, Components2, options) {
     var _EventInterface = EventInterface(Splide3),
         on = _EventInterface.on,
+        off = _EventInterface.off,
         bind = _EventInterface.bind,
-        off = _EventInterface.off;
+        unbind = _EventInterface.unbind;
 
     var _Components2$Move = Components2.Move,
         translate = _Components2$Move.translate,
@@ -254,6 +255,7 @@
         setIndex = _Components2$Controll.setIndex,
         getIndex = _Components2$Controll.getIndex;
     var orient = Components2.Direction.orient;
+    var root = Splide3.root;
     var autoScrollOptions = {};
     var interval;
     var paused;
@@ -268,8 +270,8 @@
     }
 
     function mount() {
-      if (options.autoScroll !== false) {
-        interval = RequestInterval(0, update);
+      if (!interval && options.autoScroll !== false) {
+        interval = RequestInterval(0, move);
         listen();
         autoStart();
       }
@@ -281,16 +283,16 @@
         interval = null;
         currPosition = void 0;
         off([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL, EVENT_MOVED, EVENT_SCROLLED]);
+        unbind(root, "mouseenter mouseleave focusin focusout");
       }
     }
 
     function listen() {
-      var root = Splide3.root;
-
       if (autoScrollOptions.pauseOnHover) {
         bind(root, "mouseenter mouseleave", function (e) {
           hovered = e.type === "mouseenter";
           autoToggle();
+          console.log("enter");
         });
       }
 
@@ -301,7 +303,7 @@
         });
       }
 
-      on(EVENT_UPDATED, onUpdate);
+      on(EVENT_UPDATED, update);
       on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], function () {
         busy = true;
         pause(false);
@@ -312,12 +314,12 @@
       });
     }
 
-    function onUpdate() {
+    function update() {
       var autoScroll = options.autoScroll;
 
       if (autoScroll !== false) {
         autoScrollOptions = assign2(autoScrollOptions, isObject2(autoScroll) ? autoScroll : {});
-        !interval && mount();
+        mount();
       } else {
         destroy();
       }
@@ -365,7 +367,7 @@
       }
     }
 
-    function update() {
+    function move() {
       var position = getPosition();
       var destination = computeDestination(position);
 

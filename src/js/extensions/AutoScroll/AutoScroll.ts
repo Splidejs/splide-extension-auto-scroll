@@ -54,10 +54,11 @@ export interface AutoScrollComponent extends BaseComponent {
  * @return An AutoScroll component object.
  */
 export function AutoScroll( Splide: Splide, Components: Components, options: Options ): AutoScrollComponent {
-  const { on, bind, off } = EventInterface( Splide );
+  const { on, off, bind, unbind } = EventInterface( Splide );
   const { translate, getPosition, toIndex, getLimit } = Components.Move;
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
+  const { root } = Splide;
 
   /**
    * Keeps the latest options.
@@ -106,8 +107,8 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    * Called when the component is mounted.
    */
   function mount(): void {
-    if ( options.autoScroll !== false ) {
-      interval = RequestInterval( 0, update );
+    if ( ! interval && options.autoScroll !== false ) {
+      interval = RequestInterval( 0, move );
       listen();
       autoStart();
     }
@@ -122,7 +123,9 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       interval = null;
 
       currPosition = undefined;
+
       off( [ EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL, EVENT_MOVED, EVENT_SCROLLED ] );
+      unbind( root, 'mouseenter mouseleave focusin focusout' );
     }
   }
 
@@ -130,12 +133,11 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    * Listens to some events.
    */
   function listen(): void {
-    const { root } = Splide;
-
     if ( autoScrollOptions.pauseOnHover ) {
       bind( root, 'mouseenter mouseleave', e => {
         hovered = e.type === 'mouseenter';
         autoToggle();
+        console.log( 'enter' );
       } );
     }
 
@@ -146,7 +148,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       } );
     }
 
-    on( EVENT_UPDATED, onUpdate );
+    on( EVENT_UPDATED, update );
 
     on( [ EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL ], () => {
       busy = true;
@@ -161,13 +163,15 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
 
   /**
    * Called when the slider is updated.
+   * Attempts to keep continuous scrolling with the current position
+   * since the update event makes the slider jump to the current index.
    */
-  function onUpdate(): void {
+  function update(): void {
     const { autoScroll } = options;
 
     if ( autoScroll !== false ) {
       autoScrollOptions = assign( autoScrollOptions, isObject( autoScroll ) ? autoScroll : {} );
-      ! interval && mount();
+      mount();
     } else {
       destroy();
     }
@@ -228,7 +232,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   /**
    * Called on every animation frame while the auto scroll is active.
    */
-  function update(): void {
+  function move(): void {
     const position    = getPosition();
     const destination = computeDestination( position );
 

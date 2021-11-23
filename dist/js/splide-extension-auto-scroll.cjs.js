@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.3.0
+ * Version  : 0.3.1
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
@@ -211,10 +211,11 @@ var DEFAULTS2 = {
 
 // src/js/extensions/AutoScroll/AutoScroll.ts
 function AutoScroll(Splide3, Components2, options) {
-  const { on, bind, off } = EventInterface(Splide3);
+  const { on, off, bind, unbind } = EventInterface(Splide3);
   const { translate, getPosition, toIndex, getLimit } = Components2.Move;
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
+  const { root } = Splide3;
   let autoScrollOptions = {};
   let interval;
   let paused;
@@ -227,8 +228,8 @@ function AutoScroll(Splide3, Components2, options) {
     autoScrollOptions = assign2({}, DEFAULTS2, isObject2(autoScroll) ? autoScroll : {});
   }
   function mount() {
-    if (options.autoScroll !== false) {
-      interval = RequestInterval(0, update);
+    if (!interval && options.autoScroll !== false) {
+      interval = RequestInterval(0, move);
       listen();
       autoStart();
     }
@@ -239,14 +240,15 @@ function AutoScroll(Splide3, Components2, options) {
       interval = null;
       currPosition = void 0;
       off([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL, EVENT_MOVED, EVENT_SCROLLED]);
+      unbind(root, "mouseenter mouseleave focusin focusout");
     }
   }
   function listen() {
-    const { root } = Splide3;
     if (autoScrollOptions.pauseOnHover) {
       bind(root, "mouseenter mouseleave", (e) => {
         hovered = e.type === "mouseenter";
         autoToggle();
+        console.log("enter");
       });
     }
     if (autoScrollOptions.pauseOnFocus) {
@@ -255,7 +257,7 @@ function AutoScroll(Splide3, Components2, options) {
         autoToggle();
       });
     }
-    on(EVENT_UPDATED, onUpdate);
+    on(EVENT_UPDATED, update);
     on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], () => {
       busy = true;
       pause(false);
@@ -265,11 +267,11 @@ function AutoScroll(Splide3, Components2, options) {
       autoToggle();
     });
   }
-  function onUpdate() {
+  function update() {
     const { autoScroll } = options;
     if (autoScroll !== false) {
       autoScrollOptions = assign2(autoScrollOptions, isObject2(autoScroll) ? autoScroll : {});
-      !interval && mount();
+      mount();
     } else {
       destroy();
     }
@@ -306,7 +308,7 @@ function AutoScroll(Splide3, Components2, options) {
       }
     }
   }
-  function update() {
+  function move() {
     const position = getPosition();
     const destination = computeDestination(position);
     if (position !== destination) {
