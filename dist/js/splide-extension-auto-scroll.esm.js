@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.3.1
+ * Version  : 0.3.2
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
@@ -345,7 +345,7 @@ function AutoScroll(Splide3, Components2, options) {
 }
 /*!
  * Splide.js
- * Version  : 3.6.1
+ * Version  : 3.6.8
  * License  : MIT
  * Copyright: 2021 Naotoshi Fujita
  */
