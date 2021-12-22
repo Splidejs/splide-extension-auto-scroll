@@ -137,7 +137,6 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       bind( root, 'mouseenter mouseleave', e => {
         hovered = e.type === 'mouseenter';
         autoToggle();
-        console.log( 'enter' );
       } );
     }
 
