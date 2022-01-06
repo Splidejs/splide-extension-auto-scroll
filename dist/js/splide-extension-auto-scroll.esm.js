@@ -1,8 +1,8 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.3.3
+ * Version  : 0.3.4
  * License  : MIT
- * Copyright: 2021 Naotoshi Fujita
+ * Copyright: 2022 Naotoshi Fujita
  */
 // node_modules/@splidejs/splide/dist/js/splide.esm.js
 function isArray(subject) {
@@ -244,7 +244,6 @@ function AutoScroll(Splide3, Components2, options) {
       bind(root, "mouseenter mouseleave", (e) => {
         hovered = e.type === "mouseenter";
         autoToggle();
-        console.log("enter");
       });
     }
     if (autoScrollOptions.pauseOnFocus) {

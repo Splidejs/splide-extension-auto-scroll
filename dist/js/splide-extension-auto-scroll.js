@@ -1,8 +1,8 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.3.3
+ * Version  : 0.3.4
  * License  : MIT
- * Copyright: 2021 Naotoshi Fujita
+ * Copyright: 2022 Naotoshi Fujita
  */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) : factory();
@@ -292,7 +292,6 @@
         bind(root, "mouseenter mouseleave", function (e) {
           hovered = e.type === "mouseenter";
           autoToggle();
-          console.log("enter");
         });
       }
 
