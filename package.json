@@ -1,11 +1,12 @@
 {
   "name": "@splidejs/splide-extension-auto-scroll",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "The Splide extension for continuously scrolling the slider.",
   "author": "Naotoshi Fujita",
   "license": "MIT",
   "main": "dist/js/splide-extension-auto-scroll.cjs.js",
   "module": "dist/js/splide-extension-auto-scroll.esm.js",
+  "browser": "dist/js/splide-extension-auto-scroll.min.js",
   "types": "dist/types/index.d.ts",
   "keywords": [
     "splide",
