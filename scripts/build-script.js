@@ -1,10 +1,10 @@
-const rollup   = require( 'rollup' ).rollup;
-const esbuild  = require( 'rollup-plugin-esbuild' );
-const babel    = require( '@rollup/plugin-babel' );
-const resolve  = require( '@rollup/plugin-node-resolve' ).nodeResolve;
-const path     = require( 'path' );
-const banner   = require( './constants/banner' );
-const name     = 'splide-extension-auto-scroll';
+const rollup  = require( 'rollup' ).rollup;
+const esbuild = require( 'rollup-plugin-esbuild' ).default;
+const babel   = require( '@rollup/plugin-babel' );
+const resolve = require( '@rollup/plugin-node-resolve' ).nodeResolve;
+const path    = require( 'path' );
+const banner  = require( './constants/banner' );
+const name    = 'splide-extension-auto-scroll';
 
 
 function buildScript( compress ) {
