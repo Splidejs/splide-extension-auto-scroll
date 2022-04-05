@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.4.0
+ * Version  : 0.4.1
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
