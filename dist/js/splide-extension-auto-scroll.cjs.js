@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.4.1
+ * Version  : 0.4.2
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
@@ -28,17 +28,17 @@ function typeOf$1(type, subject) {
   return typeof subject === type;
 }
 
-var isArray = Array.isArray;
+var isArray$1 = Array.isArray;
 apply$1(typeOf$1, "function");
 apply$1(typeOf$1, "string");
 apply$1(typeOf$1, "undefined");
 
-function toArray(value) {
-  return isArray(value) ? value : [value];
+function toArray$1(value) {
+  return isArray$1(value) ? value : [value];
 }
 
-function forEach(values, iteratee) {
-  toArray(values).forEach(iteratee);
+function forEach$1(values, iteratee) {
+  toArray$1(values).forEach(iteratee);
 }
 
 var ownKeys$1 = Object.keys;
@@ -117,8 +117,8 @@ function EventBinder() {
   }
 
   function forEachEvent(targets, events, iteratee) {
-    forEach(targets, function (target) {
-      target && forEach(events, function (events2) {
+    forEach$1(targets, function (target) {
+      target && forEach$1(events, function (events2) {
         events2.split(" ").forEach(function (eventNS) {
           var fragment = eventNS.split(".");
           iteratee(target, fragment[0], fragment[1]);
@@ -154,8 +154,8 @@ function EventInterface(Splide2) {
   var binder = EventBinder();
 
   function on(events, callback) {
-    binder.bind(bus, toArray(events).join(" "), function (e) {
-      callback.apply(callback, isArray(e.detail) ? e.detail : []);
+    binder.bind(bus, toArray$1(events).join(" "), function (e) {
+      callback.apply(callback, isArray$1(e.detail) ? e.detail : []);
     });
   }
 
@@ -245,8 +245,10 @@ function RequestInterval(interval, onInterval, onUpdate, limit) {
     isPaused: isPaused
   };
 }
+var CLASS_ACTIVE = "is-active";
 
 var SLIDE = "slide";
+var FADE = "fade";
 
 function slice(arrayLike, start, end) {
   return Array.prototype.slice.call(arrayLike, start, end);
@@ -262,11 +264,30 @@ function typeOf(type, subject) {
 function isObject(subject) {
   return !isNull(subject) && typeOf("object", subject);
 }
+const isArray = Array.isArray;
 apply(typeOf, "function");
 apply(typeOf, "string");
 const isUndefined = apply(typeOf, "undefined");
 function isNull(subject) {
   return subject === null;
+}
+
+function toArray(value) {
+  return isArray(value) ? value : [value];
+}
+
+function forEach(values, iteratee) {
+  toArray(values).forEach(iteratee);
+}
+
+function toggleClass(elm, classes, add) {
+  if (elm) {
+    forEach(classes, (name) => {
+      if (name) {
+        elm.classList[add ? "add" : "remove"](name);
+      }
+    });
+  }
 }
 
 const ownKeys = Object.keys;
@@ -296,6 +317,26 @@ function assign(object) {
   return object;
 }
 
+function removeAttribute(elms, attrs) {
+  forEach(elms, (elm) => {
+    forEach(attrs, (attr) => {
+      elm && elm.removeAttribute(attr);
+    });
+  });
+}
+
+function setAttribute(elms, attrs, value) {
+  if (isObject(attrs)) {
+    forOwn(attrs, (value2, name) => {
+      setAttribute(elms, name, value2);
+    });
+  } else {
+    forEach(elms, (elm) => {
+      isNull(value) || value === "" ? removeAttribute(elm, attrs) : elm.setAttribute(attrs, String(value));
+    });
+  }
+}
+
 const { min, max, floor, ceil, abs } = Math;
 
 function clamp(number, x, y) {
@@ -311,15 +352,22 @@ const DEFAULTS = {
   pauseOnFocus: true
 };
 
+const I18N = {
+  startScroll: "Start auto scroll",
+  pauseScroll: "Pause auto scroll"
+};
+
 function AutoScroll(Splide2, Components2, options) {
   const { on, off, bind, unbind } = EventInterface(Splide2);
   const { translate, getPosition, toIndex, getLimit, exceededLimit } = Components2.Move;
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
+  const { toggle } = Components2.Elements;
+  const { Live } = Components2;
   const { root } = Splide2;
   let autoScrollOptions = {};
   let interval;
-  let paused;
+  let stopped;
   let hovered;
   let focused;
   let busy;
@@ -329,10 +377,12 @@ function AutoScroll(Splide2, Components2, options) {
     autoScrollOptions = assign({}, DEFAULTS, isObject(autoScroll) ? autoScroll : {});
   }
   function mount() {
-    if (!interval && options.autoScroll !== false) {
-      interval = RequestInterval(0, move);
-      listen();
-      autoStart();
+    if (!Splide2.is(FADE)) {
+      if (!interval && options.autoScroll !== false) {
+        interval = RequestInterval(0, move);
+        listen();
+        autoStart();
+      }
     }
   }
   function destroy() {
@@ -342,6 +392,7 @@ function AutoScroll(Splide2, Components2, options) {
       currPosition = void 0;
       off([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL, EVENT_MOVED, EVENT_SCROLLED]);
       unbind(root, "mouseenter mouseleave focusin focusout");
+      unbind(toggle, "click");
     }
   }
   function listen() {
@@ -357,6 +408,11 @@ function AutoScroll(Splide2, Components2, options) {
         autoToggle();
       });
     }
+    if (autoScrollOptions.useToggleButton) {
+      bind(toggle, "click", () => {
+        stopped ? play() : pause();
+      });
+    }
     on(EVENT_UPDATED, update);
     on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], () => {
       busy = true;
@@ -370,7 +426,7 @@ function AutoScroll(Splide2, Components2, options) {
   function update() {
     const { autoScroll } = options;
     if (autoScroll !== false) {
-      autoScrollOptions = assign(autoScrollOptions, isObject(autoScroll) ? autoScroll : {});
+      autoScrollOptions = assign({}, autoScrollOptions, isObject(autoScroll) ? autoScroll : {});
       mount();
     } else {
       destroy();
@@ -389,23 +445,26 @@ function AutoScroll(Splide2, Components2, options) {
     }
   }
   function play() {
-    if (interval && interval.isPaused()) {
+    if (isPaused()) {
       interval.start(true);
+      Live.disable(true);
+      focused = hovered = stopped = false;
+      updateButton();
     }
   }
-  function pause(manual = true) {
-    if (interval && !interval.isPaused()) {
-      interval.pause();
+  function pause(stop = true) {
+    if (!stopped) {
+      stopped = stop;
+      updateButton();
+      if (!isPaused()) {
+        interval.pause();
+        Live.disable(false);
+      }
     }
-    paused = manual;
   }
   function autoToggle() {
-    if (!paused) {
-      if (!hovered && !focused && !busy) {
-        play();
-      } else {
-        pause(false);
-      }
+    if (!stopped) {
+      hovered || focused || busy ? pause(false) : play();
     }
   }
   function move() {
@@ -437,6 +496,13 @@ function AutoScroll(Splide2, Components2, options) {
       setIndex(index);
       Components2.Slides.update();
       Components2.Pagination.update();
+    }
+  }
+  function updateButton() {
+    if (toggle) {
+      const key = stopped ? "startScroll" : "pauseScroll";
+      toggleClass(toggle, CLASS_ACTIVE, !stopped);
+      setAttribute(toggle, "aria-label", options.i18n[key] || I18N[key]);
     }
   }
   function isPaused() {

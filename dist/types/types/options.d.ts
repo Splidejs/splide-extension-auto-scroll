@@ -24,5 +24,9 @@ export interface AutoScrollOptions {
      * Determines whether to pause the auto scroll when the slider contains an active element.
      */
     pauseOnFocus?: boolean;
+    /**
+     * Determines whether to use the Autoplay toggle button for controlling auto scroll or not.
+     */
+    useToggleButton?: boolean;
 }
 //# sourceMappingURL=../../../src/js/types/options.d.ts.map

@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.4.1
+ * Version  : 0.4.2
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
@@ -29,17 +29,17 @@
     return typeof subject === type;
   }
 
-  var isArray = Array.isArray;
+  var isArray$1 = Array.isArray;
   apply$1(typeOf$1, "function");
   apply$1(typeOf$1, "string");
   apply$1(typeOf$1, "undefined");
 
-  function toArray(value) {
-    return isArray(value) ? value : [value];
+  function toArray$1(value) {
+    return isArray$1(value) ? value : [value];
   }
 
-  function forEach(values, iteratee) {
-    toArray(values).forEach(iteratee);
+  function forEach$1(values, iteratee) {
+    toArray$1(values).forEach(iteratee);
   }
 
   var ownKeys$1 = Object.keys;
@@ -118,8 +118,8 @@
     }
 
     function forEachEvent(targets, events, iteratee) {
-      forEach(targets, function (target) {
-        target && forEach(events, function (events2) {
+      forEach$1(targets, function (target) {
+        target && forEach$1(events, function (events2) {
           events2.split(" ").forEach(function (eventNS) {
             var fragment = eventNS.split(".");
             iteratee(target, fragment[0], fragment[1]);
@@ -156,8 +156,8 @@
     var binder = EventBinder();
 
     function on(events, callback) {
-      binder.bind(bus, toArray(events).join(" "), function (e) {
-        callback.apply(callback, isArray(e.detail) ? e.detail : []);
+      binder.bind(bus, toArray$1(events).join(" "), function (e) {
+        callback.apply(callback, isArray$1(e.detail) ? e.detail : []);
       });
     }
 
@@ -248,7 +248,9 @@
     };
   }
 
+  var CLASS_ACTIVE = "is-active";
   var SLIDE = "slide";
+  var FADE = "fade";
 
   function slice(arrayLike, start, end) {
     return Array.prototype.slice.call(arrayLike, start, end);
@@ -266,12 +268,31 @@
     return !isNull(subject) && typeOf("object", subject);
   }
 
+  var isArray = Array.isArray;
   apply(typeOf, "function");
   apply(typeOf, "string");
   var isUndefined = apply(typeOf, "undefined");
 
   function isNull(subject) {
     return subject === null;
+  }
+
+  function toArray(value) {
+    return isArray(value) ? value : [value];
+  }
+
+  function forEach(values, iteratee) {
+    toArray(values).forEach(iteratee);
+  }
+
+  function toggleClass(elm, classes, add) {
+    if (elm) {
+      forEach(classes, function (name) {
+        if (name) {
+          elm.classList[add ? "add" : "remove"](name);
+        }
+      });
+    }
   }
 
   var ownKeys = Object.keys;
@@ -304,6 +325,26 @@
     return object;
   }
 
+  function removeAttribute(elms, attrs) {
+    forEach(elms, function (elm) {
+      forEach(attrs, function (attr) {
+        elm && elm.removeAttribute(attr);
+      });
+    });
+  }
+
+  function setAttribute(elms, attrs, value) {
+    if (isObject(attrs)) {
+      forOwn(attrs, function (value2, name) {
+        setAttribute(elms, name, value2);
+      });
+    } else {
+      forEach(elms, function (elm) {
+        isNull(value) || value === "" ? removeAttribute(elm, attrs) : elm.setAttribute(attrs, String(value));
+      });
+    }
+  }
+
   var min = Math.min,
       max = Math.max,
       floor = Math.floor,
@@ -321,6 +362,10 @@
     autoStart: true,
     pauseOnHover: true,
     pauseOnFocus: true
+  };
+  var I18N = {
+    startScroll: "Start auto scroll",
+    pauseScroll: "Pause auto scroll"
   };
 
   function AutoScroll(Splide2, Components2, options) {
@@ -340,10 +385,12 @@
         setIndex = _Components2$Controll.setIndex,
         getIndex = _Components2$Controll.getIndex;
     var orient = Components2.Direction.orient;
+    var toggle = Components2.Elements.toggle;
+    var Live = Components2.Live;
     var root = Splide2.root;
     var autoScrollOptions = {};
     var interval;
-    var paused;
+    var stopped;
     var hovered;
     var focused;
     var busy;
@@ -355,10 +402,12 @@
     }
 
     function mount() {
-      if (!interval && options.autoScroll !== false) {
-        interval = RequestInterval(0, move);
-        listen();
-        autoStart();
+      if (!Splide2.is(FADE)) {
+        if (!interval && options.autoScroll !== false) {
+          interval = RequestInterval(0, move);
+          listen();
+          autoStart();
+        }
       }
     }
 
@@ -369,6 +418,7 @@
         currPosition = void 0;
         off([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL, EVENT_MOVED, EVENT_SCROLLED]);
         unbind(root, "mouseenter mouseleave focusin focusout");
+        unbind(toggle, "click");
       }
     }
 
@@ -387,6 +437,12 @@
         });
       }
 
+      if (autoScrollOptions.useToggleButton) {
+        bind(toggle, "click", function () {
+          stopped ? play() : pause();
+        });
+      }
+
       on(EVENT_UPDATED, update);
       on([EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL], function () {
         busy = true;
@@ -402,7 +458,7 @@
       var autoScroll = options.autoScroll;
 
       if (autoScroll !== false) {
-        autoScrollOptions = assign(autoScrollOptions, isObject(autoScroll) ? autoScroll : {});
+        autoScrollOptions = assign({}, autoScrollOptions, isObject(autoScroll) ? autoScroll : {});
         mount();
       } else {
         destroy();
@@ -424,30 +480,33 @@
     }
 
     function play() {
-      if (interval && interval.isPaused()) {
+      if (isPaused()) {
         interval.start(true);
+        Live.disable(true);
+        focused = hovered = stopped = false;
+        updateButton();
       }
     }
 
-    function pause(manual) {
-      if (manual === void 0) {
-        manual = true;
+    function pause(stop) {
+      if (stop === void 0) {
+        stop = true;
       }
 
-      if (interval && !interval.isPaused()) {
-        interval.pause();
-      }
+      if (!stopped) {
+        stopped = stop;
+        updateButton();
 
-      paused = manual;
+        if (!isPaused()) {
+          interval.pause();
+          Live.disable(false);
+        }
+      }
     }
 
     function autoToggle() {
-      if (!paused) {
-        if (!hovered && !focused && !busy) {
-          play();
-        } else {
-          pause(false);
-        }
+      if (!stopped) {
+        hovered || focused || busy ? pause(false) : play();
       }
     }
 
@@ -487,6 +546,14 @@
         setIndex(index);
         Components2.Slides.update();
         Components2.Pagination.update();
+      }
+    }
+
+    function updateButton() {
+      if (toggle) {
+        var key = stopped ? "startScroll" : "pauseScroll";
+        toggleClass(toggle, CLASS_ACTIVE, !stopped);
+        setAttribute(toggle, "aria-label", options.i18n[key] || I18N[key]);
       }
     }
 

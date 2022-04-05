@@ -14,10 +14,10 @@
 			var splide = new Splide( '#splide01', {
 				width  : 600,
 				height : 300,
-        // perPage: 2,
 				gap    : '1rem',
         drag   : 'free',
         autoScroll: {
+          useToggleButton: true,
           // autoStart: false,
           speed: 2,
           rewind: true,
@@ -73,6 +73,11 @@
 			?>
 		</ul>
 	</div>
+
+  <button class="splide__toggle">
+    <span class="splide__toggle__play">Play</span>
+    <span class="splide__toggle__pause">Pause</span>
+  </button>
 </div>
 
 </body>

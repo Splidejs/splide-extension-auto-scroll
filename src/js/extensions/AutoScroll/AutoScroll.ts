@@ -1,5 +1,6 @@
 import {
   BaseComponent,
+  CLASS_ACTIVE,
   Components,
   EVENT_DRAG,
   EVENT_MOVE,
@@ -8,15 +9,17 @@ import {
   EVENT_SCROLLED,
   EVENT_UPDATED,
   EventInterface,
+  FADE,
   Options,
   RequestInterval,
   RequestIntervalInterface,
   SLIDE,
   Splide,
 } from '@splidejs/splide';
-import { assign, clamp, isObject, isUndefined } from '@splidejs/splide/src/js/utils';
+import { assign, clamp, isObject, isUndefined, setAttribute, toggleClass } from '@splidejs/splide/src/js/utils';
 import { DEFAULTS } from '../../constants/defaults';
 import { AutoScrollOptions } from '../../types/options';
+import { I18N } from "../../constants/i18n";
 
 
 /**
@@ -59,6 +62,8 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   const { translate, getPosition, toIndex, getLimit, exceededLimit } = Components.Move;
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
+  const { toggle } = Components.Elements;
+  const { Live } = Components;
   const { root } = Splide;
 
   /**
@@ -74,7 +79,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   /**
    * Turns into `true` when the auto scroll is manually paused.
    */
-  let paused: boolean;
+  let stopped: boolean;
 
   /**
    * Indicates whether the mouse cursor is on the slider or not.
@@ -108,10 +113,12 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    * Called when the component is mounted.
    */
   function mount(): void {
-    if ( ! interval && options.autoScroll !== false ) {
-      interval = RequestInterval( 0, move );
-      listen();
-      autoStart();
+    if ( ! Splide.is( FADE ) ) {
+      if ( ! interval && options.autoScroll !== false ) {
+        interval = RequestInterval( 0, move );
+        listen();
+        autoStart();
+      }
     }
   }
 
@@ -127,6 +134,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
 
       off( [ EVENT_MOVE, EVENT_DRAG, EVENT_SCROLL, EVENT_MOVED, EVENT_SCROLLED ] );
       unbind( root, 'mouseenter mouseleave focusin focusout' );
+      unbind( toggle, 'click' );
     }
   }
 
@@ -145,6 +153,12 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       bind( root, 'focusin focusout', e => {
         focused = e.type === 'focusin';
         autoToggle();
+      } );
+    }
+
+    if ( autoScrollOptions.useToggleButton ) {
+      bind( toggle, 'click', () => {
+        stopped ? play() : pause();
       } );
     }
 
@@ -170,7 +184,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
     const { autoScroll } = options;
 
     if ( autoScroll !== false ) {
-      autoScrollOptions = assign( autoScrollOptions, isObject( autoScroll ) ? autoScroll : {} );
+      autoScrollOptions = assign( {}, autoScrollOptions, isObject( autoScroll ) ? autoScroll : {} );
       mount();
     } else {
       destroy();
@@ -198,34 +212,37 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    * Starts auto scroll.
    */
   function play(): void {
-    if ( interval && interval.isPaused() ) {
+    if ( isPaused() ) {
       interval.start( true );
+      Live.disable( true );
+      focused = hovered = stopped = false;
+      updateButton();
     }
   }
 
   /**
    * Pauses auto scroll.
    *
-   * @param manual - Optional. If `true`, auto scroll will never restart without calling `play()`.
+   * @param stop - Optional. If `true`, auto scroll will never restart without calling `play()`.
    */
-  function pause( manual = true ): void {
-    if ( interval && ! interval.isPaused() ) {
-      interval.pause();
-    }
+  function pause( stop = true ): void {
+    if ( ! stopped ) {
+      stopped = stop;
+      updateButton();
 
-    paused = manual;
+      if ( ! isPaused() ) {
+        interval.pause();
+        Live.disable( false );
+      }
+    }
   }
 
   /**
    * Automatically plays or pauses scrolling.
    */
   function autoToggle(): void {
-    if ( ! paused ) {
-      if ( ! hovered && ! focused && ! busy ) {
-        play();
-      } else {
-        pause( false );
-      }
+    if ( ! stopped ) {
+      hovered || focused || busy ? pause( false ) : play();
     }
   }
 
@@ -280,6 +297,17 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       setIndex( index );
       Components.Slides.update();
       Components.Pagination.update();
+    }
+  }
+
+  /**
+   * Updates the toggle button status.
+   */
+  function updateButton(): void {
+    if ( toggle ) {
+      const key = stopped ? 'startScroll' : 'pauseScroll';
+      toggleClass( toggle, CLASS_ACTIVE, ! stopped );
+      setAttribute( toggle, 'aria-label', options.i18n[ key ] || I18N[ key ] );
     }
   }
 
