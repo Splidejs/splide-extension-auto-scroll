@@ -313,7 +313,7 @@ const DEFAULTS = {
 
 function AutoScroll(Splide2, Components2, options) {
   const { on, off, bind, unbind } = EventInterface(Splide2);
-  const { translate, getPosition, toIndex, getLimit } = Components2.Move;
+  const { translate, getPosition, toIndex, getLimit, exceededLimit } = Components2.Move;
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
   const { root } = Splide2;
@@ -412,9 +412,9 @@ function AutoScroll(Splide2, Components2, options) {
     const position = getPosition();
     const destination = computeDestination(position);
     if (position !== destination) {
-      translate(destination);
-      updateIndex(destination);
-      currPosition = destination;
+      translate(destination, getIndex() !== 0 || !exceededLimit(true));
+      currPosition = getPosition();
+      updateIndex(currPosition);
     } else {
       pause(false);
       if (autoScrollOptions.rewind) {

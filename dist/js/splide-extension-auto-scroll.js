@@ -334,7 +334,8 @@
         translate = _Components2$Move.translate,
         getPosition = _Components2$Move.getPosition,
         toIndex = _Components2$Move.toIndex,
-        getLimit = _Components2$Move.getLimit;
+        getLimit = _Components2$Move.getLimit,
+        exceededLimit = _Components2$Move.exceededLimit;
     var _Components2$Controll = Components2.Controller,
         setIndex = _Components2$Controll.setIndex,
         getIndex = _Components2$Controll.getIndex;
@@ -455,9 +456,9 @@
       var destination = computeDestination(position);
 
       if (position !== destination) {
-        translate(destination);
-        updateIndex(destination);
-        currPosition = destination;
+        translate(destination, getIndex() !== 0 || !exceededLimit(true));
+        currPosition = getPosition();
+        updateIndex(currPosition);
       } else {
         pause(false);
 

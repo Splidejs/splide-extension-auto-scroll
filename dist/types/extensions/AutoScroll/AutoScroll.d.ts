@@ -19,6 +19,7 @@ declare module '@splidejs/splide' {
 export interface AutoScrollComponent extends BaseComponent {
     play(): void;
     pause(): void;
+    isPaused(): boolean;
 }
 /**
  * The extension for continuously scrolling the slider.

@@ -56,7 +56,7 @@ export interface AutoScrollComponent extends BaseComponent {
  */
 export function AutoScroll( Splide: Splide, Components: Components, options: Options ): AutoScrollComponent {
   const { on, off, bind, unbind } = EventInterface( Splide );
-  const { translate, getPosition, toIndex, getLimit } = Components.Move;
+  const { translate, getPosition, toIndex, getLimit, exceededLimit } = Components.Move;
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
   const { root } = Splide;
@@ -237,9 +237,9 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
     const destination = computeDestination( position );
 
     if ( position !== destination ) {
-      translate( destination );
-      updateIndex( destination );
-      currPosition = destination;
+      translate( destination, getIndex() !== 0 || ! exceededLimit( true ) );
+      currPosition = getPosition();
+      updateIndex( currPosition );
     } else {
       pause( false );
 
@@ -250,7 +250,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   }
 
   /**
-   * Returns the position to to.
+   * Returns the position to move.
    *
    * @param position - The current position.
    *
