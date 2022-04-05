@@ -11,9 +11,9 @@ import {
   Options,
   RequestInterval,
   RequestIntervalInterface,
+  SLIDE,
   Splide,
 } from '@splidejs/splide';
-import { SLIDE } from '@splidejs/splide/src/js/constants/types';
 import { assign, clamp, isObject, isUndefined } from '@splidejs/splide/src/js/utils';
 import { DEFAULTS } from '../../constants/defaults';
 import { AutoScrollOptions } from '../../types/options';
@@ -40,6 +40,7 @@ declare module '@splidejs/splide' {
 export interface AutoScrollComponent extends BaseComponent {
   play(): void;
   pause(): void;
+  isPaused(): boolean;
 }
 
 /**
@@ -282,11 +283,21 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
     }
   }
 
+  /**
+   * Checks if the auto scroll is paused or not.
+   *
+   * @return `true` if it's paused, or otherwise `false`.
+   */
+  function isPaused(): boolean {
+    return ! interval || interval.isPaused();
+  }
+
   return {
     setup,
     mount,
     destroy,
     play,
     pause,
+    isPaused,
   };
 }

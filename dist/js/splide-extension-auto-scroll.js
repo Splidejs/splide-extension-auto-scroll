@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.3.7
+ * Version  : 0.4.0
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
@@ -9,9 +9,30 @@
 })(function () {
   'use strict';
 
-  function isArray(subject) {
-    return Array.isArray(subject);
+  function empty(array) {
+    array.length = 0;
   }
+
+  function slice$1(arrayLike, start, end) {
+    return Array.prototype.slice.call(arrayLike, start, end);
+  }
+
+  function apply$1(func) {
+    return func.bind.apply(func, [null].concat(slice$1(arguments, 1)));
+  }
+
+  function raf(func) {
+    return requestAnimationFrame(func);
+  }
+
+  function typeOf$1(type, subject) {
+    return typeof subject === type;
+  }
+
+  var isArray = Array.isArray;
+  apply$1(typeOf$1, "function");
+  apply$1(typeOf$1, "string");
+  apply$1(typeOf$1, "undefined");
 
   function toArray(value) {
     return isArray(value) ? value : [value];
@@ -21,8 +42,105 @@
     toArray(values).forEach(iteratee);
   }
 
-  function raf(func) {
-    return requestAnimationFrame(func);
+  var ownKeys$1 = Object.keys;
+
+  function forOwn$1(object, iteratee, right) {
+    if (object) {
+      var keys = ownKeys$1(object);
+      keys = right ? keys.reverse() : keys;
+
+      for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+
+        if (key !== "__proto__") {
+          if (iteratee(object[key], key) === false) {
+            break;
+          }
+        }
+      }
+    }
+
+    return object;
+  }
+
+  function assign$1(object) {
+    slice$1(arguments, 1).forEach(function (source) {
+      forOwn$1(source, function (value, key) {
+        object[key] = source[key];
+      });
+    });
+    return object;
+  }
+
+  var min$1 = Math.min;
+
+  function EventBinder() {
+    var listeners = [];
+
+    function bind(targets, events, callback, options) {
+      forEachEvent(targets, events, function (target, event, namespace) {
+        var isEventTarget = ("addEventListener" in target);
+        var remover = isEventTarget ? target.removeEventListener.bind(target, event, callback, options) : target["removeListener"].bind(target, callback);
+        isEventTarget ? target.addEventListener(event, callback, options) : target["addListener"](callback);
+        listeners.push([target, event, namespace, callback, remover]);
+      });
+    }
+
+    function unbind(targets, events, callback) {
+      forEachEvent(targets, events, function (target, event, namespace) {
+        listeners = listeners.filter(function (listener) {
+          if (listener[0] === target && listener[1] === event && listener[2] === namespace && (!callback || listener[3] === callback)) {
+            listener[4]();
+            return false;
+          }
+
+          return true;
+        });
+      });
+    }
+
+    function dispatch(target, type, detail) {
+      var e;
+      var bubbles = true;
+
+      if (typeof CustomEvent === "function") {
+        e = new CustomEvent(type, {
+          bubbles: bubbles,
+          detail: detail
+        });
+      } else {
+        e = document.createEvent("CustomEvent");
+        e.initCustomEvent(type, bubbles, false, detail);
+      }
+
+      target.dispatchEvent(e);
+      return e;
+    }
+
+    function forEachEvent(targets, events, iteratee) {
+      forEach(targets, function (target) {
+        target && forEach(events, function (events2) {
+          events2.split(" ").forEach(function (eventNS) {
+            var fragment = eventNS.split(".");
+            iteratee(target, fragment[0], fragment[1]);
+          });
+        });
+      });
+    }
+
+    function destroy() {
+      listeners.forEach(function (data) {
+        data[4]();
+      });
+      empty(listeners);
+    }
+
+    return {
+      bind: bind,
+      unbind: unbind,
+      dispatch: dispatch,
+      destroy: destroy
+    };
   }
 
   var EVENT_MOVE = "move";
@@ -33,63 +151,30 @@
   var EVENT_SCROLLED = "scrolled";
   var EVENT_DESTROY = "destroy";
 
-  function EventInterface(Splide22) {
-    var event = Splide22.event;
-    var key = {};
-    var listeners = [];
+  function EventInterface(Splide2) {
+    var bus = Splide2 ? Splide2.event.bus : document.createDocumentFragment();
+    var binder = EventBinder();
 
-    function on(events, callback, priority) {
-      event.on(events, callback, key, priority);
-    }
-
-    function off(events) {
-      event.off(events, key);
-    }
-
-    function bind(targets, events, callback, options) {
-      forEachEvent(targets, events, function (target, event2) {
-        listeners.push([target, event2, callback, options]);
-        target.addEventListener(event2, callback, options);
+    function on(events, callback) {
+      binder.bind(bus, toArray(events).join(" "), function (e) {
+        callback.apply(callback, isArray(e.detail) ? e.detail : []);
       });
     }
 
-    function unbind(targets, events, callback) {
-      forEachEvent(targets, events, function (target, event2) {
-        listeners = listeners.filter(function (listener) {
-          if (listener[0] === target && listener[1] === event2 && (!callback || listener[2] === callback)) {
-            target.removeEventListener(event2, listener[2], listener[3]);
-            return false;
-          }
-
-          return true;
-        });
-      });
+    function emit(event) {
+      binder.dispatch(bus, event, slice$1(arguments, 1));
     }
 
-    function forEachEvent(targets, events, iteratee) {
-      forEach(targets, function (target) {
-        if (target) {
-          events.split(" ").forEach(iteratee.bind(null, target));
-        }
-      });
+    if (Splide2) {
+      Splide2.event.on(EVENT_DESTROY, binder.destroy);
     }
 
-    function destroy() {
-      listeners = listeners.filter(function (data) {
-        return unbind(data[0], data[1]);
-      });
-      event.offBy(key);
-    }
-
-    event.on(EVENT_DESTROY, destroy, key);
-    return {
+    return assign$1(binder, {
+      bus: bus,
       on: on,
-      off: off,
-      emit: event.emit,
-      bind: bind,
-      unbind: unbind,
-      destroy: destroy
-    };
+      off: apply$1(binder.unbind, bus),
+      emit: emit
+    });
   }
 
   function RequestInterval(interval, onInterval, onUpdate, limit) {
@@ -102,21 +187,12 @@
 
     function update() {
       if (!paused) {
-        var elapsed = now() - startTime;
+        rate = interval ? min$1((now() - startTime) / interval, 1) : 1;
+        onUpdate && onUpdate(rate);
 
-        if (elapsed >= interval) {
-          rate = 1;
-          startTime = now();
-        } else {
-          rate = elapsed / interval;
-        }
-
-        if (onUpdate) {
-          onUpdate(rate);
-        }
-
-        if (rate === 1) {
+        if (rate >= 1) {
           onInterval();
+          startTime = now();
 
           if (limit && ++count >= limit) {
             return pause();
@@ -148,7 +224,7 @@
     }
 
     function cancel() {
-      cancelAnimationFrame(id);
+      id && cancelAnimationFrame(id);
       rate = 0;
       id = 0;
       paused = true;
@@ -172,29 +248,37 @@
     };
   }
 
-  var SLIDE2 = "slide";
+  var SLIDE = "slide";
 
-  function isObject2(subject) {
-    return !isNull2(subject) && typeof subject === "object";
+  function slice(arrayLike, start, end) {
+    return Array.prototype.slice.call(arrayLike, start, end);
   }
 
-  function isUndefined2(subject) {
-    return typeof subject === "undefined";
+  function apply(func) {
+    return func.bind.apply(func, [null].concat(slice(arguments, 1)));
   }
 
-  function isNull2(subject) {
+  function typeOf(type, subject) {
+    return typeof subject === type;
+  }
+
+  function isObject(subject) {
+    return !isNull(subject) && typeOf("object", subject);
+  }
+
+  apply(typeOf, "function");
+  apply(typeOf, "string");
+  var isUndefined = apply(typeOf, "undefined");
+
+  function isNull(subject) {
     return subject === null;
   }
 
-  var arrayProto2 = Array.prototype;
+  var ownKeys = Object.keys;
 
-  function slice2(arrayLike, start, end) {
-    return arrayProto2.slice.call(arrayLike, start, end);
-  }
-
-  function forOwn2(object, iteratee, right) {
+  function forOwn(object, iteratee, right) {
     if (object) {
-      var keys = Object.keys(object);
+      var keys = ownKeys(object);
       keys = right ? keys.reverse() : keys;
 
       for (var i = 0; i < keys.length; i++) {
@@ -211,36 +295,36 @@
     return object;
   }
 
-  function assign2(object) {
-    slice2(arguments, 1).forEach(function (source) {
-      forOwn2(source, function (value, key) {
+  function assign(object) {
+    slice(arguments, 1).forEach(function (source) {
+      forOwn(source, function (value, key) {
         object[key] = source[key];
       });
     });
     return object;
   }
 
-  var min2 = Math.min,
-      max2 = Math.max,
-      floor2 = Math.floor,
-      ceil2 = Math.ceil,
-      abs2 = Math.abs;
+  var min = Math.min,
+      max = Math.max,
+      floor = Math.floor,
+      ceil = Math.ceil,
+      abs = Math.abs;
 
-  function clamp2(number, x, y) {
-    var minimum = min2(x, y);
-    var maximum = max2(x, y);
-    return min2(max2(minimum, number), maximum);
+  function clamp(number, x, y) {
+    var minimum = min(x, y);
+    var maximum = max(x, y);
+    return min(max(minimum, number), maximum);
   }
 
-  var DEFAULTS2 = {
+  var DEFAULTS = {
     speed: 1,
     autoStart: true,
     pauseOnHover: true,
     pauseOnFocus: true
   };
 
-  function AutoScroll(Splide3, Components2, options) {
-    var _EventInterface = EventInterface(Splide3),
+  function AutoScroll(Splide2, Components2, options) {
+    var _EventInterface = EventInterface(Splide2),
         on = _EventInterface.on,
         off = _EventInterface.off,
         bind = _EventInterface.bind,
@@ -255,7 +339,7 @@
         setIndex = _Components2$Controll.setIndex,
         getIndex = _Components2$Controll.getIndex;
     var orient = Components2.Direction.orient;
-    var root = Splide3.root;
+    var root = Splide2.root;
     var autoScrollOptions = {};
     var interval;
     var paused;
@@ -266,7 +350,7 @@
 
     function setup() {
       var autoScroll = options.autoScroll;
-      autoScrollOptions = assign2({}, DEFAULTS2, isObject2(autoScroll) ? autoScroll : {});
+      autoScrollOptions = assign({}, DEFAULTS, isObject(autoScroll) ? autoScroll : {});
     }
 
     function mount() {
@@ -317,13 +401,13 @@
       var autoScroll = options.autoScroll;
 
       if (autoScroll !== false) {
-        autoScrollOptions = assign2(autoScrollOptions, isObject2(autoScroll) ? autoScroll : {});
+        autoScrollOptions = assign(autoScrollOptions, isObject(autoScroll) ? autoScroll : {});
         mount();
       } else {
         destroy();
       }
 
-      if (interval && !isUndefined2(currPosition)) {
+      if (interval && !isUndefined(currPosition)) {
         translate(currPosition);
       }
     }
@@ -378,7 +462,7 @@
         pause(false);
 
         if (autoScrollOptions.rewind) {
-          Splide3.go(0);
+          Splide2.go(0);
         }
       }
     }
@@ -387,15 +471,15 @@
       var speed = autoScrollOptions.speed || 1;
       position += orient(speed);
 
-      if (Splide3.is(SLIDE2)) {
-        position = clamp2(position, getLimit(false), getLimit(true));
+      if (Splide2.is(SLIDE)) {
+        position = clamp(position, getLimit(false), getLimit(true));
       }
 
       return position;
     }
 
     function updateIndex(position) {
-      var length = Splide3.length;
+      var length = Splide2.length;
       var index = (toIndex(position) + length) % length;
 
       if (index !== getIndex()) {
@@ -405,12 +489,17 @@
       }
     }
 
+    function isPaused() {
+      return !interval || interval.isPaused();
+    }
+
     return {
       setup: setup,
       mount: mount,
       destroy: destroy,
       play: play,
-      pause: pause
+      pause: pause,
+      isPaused: isPaused
     };
   }
 
@@ -419,12 +508,5 @@
     window.splide.Extensions = window.splide.Extensions || {};
     window.splide.Extensions.AutoScroll = AutoScroll;
   }
-  /*!
-   * Splide.js
-   * Version  : 3.6.11
-   * License  : MIT
-   * Copyright: 2022 Naotoshi Fujita
-   */
-
 });
 //# sourceMappingURL=splide-extension-auto-scroll.js.map

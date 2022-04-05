@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.3.7
+ * Version  : 0.4.0
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
@@ -8,18 +8,138 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-// node_modules/@splidejs/splide/dist/js/splide.esm.js
-function isArray(subject) {
-  return Array.isArray(subject);
+function empty(array) {
+  array.length = 0;
 }
+
+function slice$1(arrayLike, start, end) {
+  return Array.prototype.slice.call(arrayLike, start, end);
+}
+
+function apply$1(func) {
+  return func.bind.apply(func, [null].concat(slice$1(arguments, 1)));
+}
+
+function raf(func) {
+  return requestAnimationFrame(func);
+}
+
+function typeOf$1(type, subject) {
+  return typeof subject === type;
+}
+
+var isArray = Array.isArray;
+apply$1(typeOf$1, "function");
+apply$1(typeOf$1, "string");
+apply$1(typeOf$1, "undefined");
+
 function toArray(value) {
   return isArray(value) ? value : [value];
 }
+
 function forEach(values, iteratee) {
   toArray(values).forEach(iteratee);
 }
-function raf(func) {
-  return requestAnimationFrame(func);
+
+var ownKeys$1 = Object.keys;
+
+function forOwn$1(object, iteratee, right) {
+  if (object) {
+    var keys = ownKeys$1(object);
+    keys = right ? keys.reverse() : keys;
+
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+
+      if (key !== "__proto__") {
+        if (iteratee(object[key], key) === false) {
+          break;
+        }
+      }
+    }
+  }
+
+  return object;
+}
+
+function assign$1(object) {
+  slice$1(arguments, 1).forEach(function (source) {
+    forOwn$1(source, function (value, key) {
+      object[key] = source[key];
+    });
+  });
+  return object;
+}
+
+var min$1 = Math.min;
+
+function EventBinder() {
+  var listeners = [];
+
+  function bind(targets, events, callback, options) {
+    forEachEvent(targets, events, function (target, event, namespace) {
+      var isEventTarget = ("addEventListener" in target);
+      var remover = isEventTarget ? target.removeEventListener.bind(target, event, callback, options) : target["removeListener"].bind(target, callback);
+      isEventTarget ? target.addEventListener(event, callback, options) : target["addListener"](callback);
+      listeners.push([target, event, namespace, callback, remover]);
+    });
+  }
+
+  function unbind(targets, events, callback) {
+    forEachEvent(targets, events, function (target, event, namespace) {
+      listeners = listeners.filter(function (listener) {
+        if (listener[0] === target && listener[1] === event && listener[2] === namespace && (!callback || listener[3] === callback)) {
+          listener[4]();
+          return false;
+        }
+
+        return true;
+      });
+    });
+  }
+
+  function dispatch(target, type, detail) {
+    var e;
+    var bubbles = true;
+
+    if (typeof CustomEvent === "function") {
+      e = new CustomEvent(type, {
+        bubbles: bubbles,
+        detail: detail
+      });
+    } else {
+      e = document.createEvent("CustomEvent");
+      e.initCustomEvent(type, bubbles, false, detail);
+    }
+
+    target.dispatchEvent(e);
+    return e;
+  }
+
+  function forEachEvent(targets, events, iteratee) {
+    forEach(targets, function (target) {
+      target && forEach(events, function (events2) {
+        events2.split(" ").forEach(function (eventNS) {
+          var fragment = eventNS.split(".");
+          iteratee(target, fragment[0], fragment[1]);
+        });
+      });
+    });
+  }
+
+  function destroy() {
+    listeners.forEach(function (data) {
+      data[4]();
+    });
+    empty(listeners);
+  }
+
+  return {
+    bind: bind,
+    unbind: unbind,
+    dispatch: dispatch,
+    destroy: destroy
+  };
 }
 var EVENT_MOVE = "move";
 var EVENT_MOVED = "moved";
@@ -28,146 +148,132 @@ var EVENT_DRAG = "drag";
 var EVENT_SCROLL = "scroll";
 var EVENT_SCROLLED = "scrolled";
 var EVENT_DESTROY = "destroy";
-function EventInterface(Splide22) {
-  const { event } = Splide22;
-  const key = {};
-  let listeners = [];
-  function on(events, callback, priority) {
-    event.on(events, callback, key, priority);
-  }
-  function off(events) {
-    event.off(events, key);
-  }
-  function bind(targets, events, callback, options) {
-    forEachEvent(targets, events, (target, event2) => {
-      listeners.push([target, event2, callback, options]);
-      target.addEventListener(event2, callback, options);
+
+function EventInterface(Splide2) {
+  var bus = Splide2 ? Splide2.event.bus : document.createDocumentFragment();
+  var binder = EventBinder();
+
+  function on(events, callback) {
+    binder.bind(bus, toArray(events).join(" "), function (e) {
+      callback.apply(callback, isArray(e.detail) ? e.detail : []);
     });
   }
-  function unbind(targets, events, callback) {
-    forEachEvent(targets, events, (target, event2) => {
-      listeners = listeners.filter((listener) => {
-        if (listener[0] === target && listener[1] === event2 && (!callback || listener[2] === callback)) {
-          target.removeEventListener(event2, listener[2], listener[3]);
-          return false;
-        }
-        return true;
-      });
-    });
+
+  function emit(event) {
+    binder.dispatch(bus, event, slice$1(arguments, 1));
   }
-  function forEachEvent(targets, events, iteratee) {
-    forEach(targets, (target) => {
-      if (target) {
-        events.split(" ").forEach(iteratee.bind(null, target));
-      }
-    });
+
+  if (Splide2) {
+    Splide2.event.on(EVENT_DESTROY, binder.destroy);
   }
-  function destroy() {
-    listeners = listeners.filter((data) => unbind(data[0], data[1]));
-    event.offBy(key);
-  }
-  event.on(EVENT_DESTROY, destroy, key);
-  return {
-    on,
-    off,
-    emit: event.emit,
-    bind,
-    unbind,
-    destroy
-  };
+
+  return assign$1(binder, {
+    bus: bus,
+    on: on,
+    off: apply$1(binder.unbind, bus),
+    emit: emit
+  });
 }
+
 function RequestInterval(interval, onInterval, onUpdate, limit) {
-  const { now } = Date;
-  let startTime;
-  let rate = 0;
-  let id;
-  let paused = true;
-  let count = 0;
+  var now = Date.now;
+  var startTime;
+  var rate = 0;
+  var id;
+  var paused = true;
+  var count = 0;
+
   function update() {
     if (!paused) {
-      const elapsed = now() - startTime;
-      if (elapsed >= interval) {
-        rate = 1;
-        startTime = now();
-      } else {
-        rate = elapsed / interval;
-      }
-      if (onUpdate) {
-        onUpdate(rate);
-      }
-      if (rate === 1) {
+      rate = interval ? min$1((now() - startTime) / interval, 1) : 1;
+      onUpdate && onUpdate(rate);
+
+      if (rate >= 1) {
         onInterval();
+        startTime = now();
+
         if (limit && ++count >= limit) {
           return pause();
         }
       }
+
       raf(update);
     }
   }
+
   function start(resume) {
     !resume && cancel();
     startTime = now() - (resume ? rate * interval : 0);
     paused = false;
     raf(update);
   }
+
   function pause() {
     paused = true;
   }
+
   function rewind() {
     startTime = now();
     rate = 0;
+
     if (onUpdate) {
       onUpdate(rate);
     }
   }
+
   function cancel() {
-    cancelAnimationFrame(id);
+    id && cancelAnimationFrame(id);
     rate = 0;
     id = 0;
     paused = true;
   }
+
   function set(time) {
     interval = time;
   }
+
   function isPaused() {
     return paused;
   }
+
   return {
-    start,
-    rewind,
-    pause,
-    cancel,
-    set,
-    isPaused
+    start: start,
+    rewind: rewind,
+    pause: pause,
+    cancel: cancel,
+    set: set,
+    isPaused: isPaused
   };
 }
 
-// node_modules/@splidejs/splide/src/js/constants/types.ts
-var SLIDE2 = "slide";
+var SLIDE = "slide";
 
-// node_modules/@splidejs/splide/src/js/utils/type/type.ts
-function isObject2(subject) {
-  return !isNull2(subject) && typeof subject === "object";
+function slice(arrayLike, start, end) {
+  return Array.prototype.slice.call(arrayLike, start, end);
 }
-function isUndefined2(subject) {
-  return typeof subject === "undefined";
+
+function apply(func) {
+  return func.bind(null, ...slice(arguments, 1));
 }
-function isNull2(subject) {
+
+function typeOf(type, subject) {
+  return typeof subject === type;
+}
+function isObject(subject) {
+  return !isNull(subject) && typeOf("object", subject);
+}
+apply(typeOf, "function");
+apply(typeOf, "string");
+const isUndefined = apply(typeOf, "undefined");
+function isNull(subject) {
   return subject === null;
 }
 
-// node_modules/@splidejs/splide/src/js/utils/array/index.ts
-var arrayProto2 = Array.prototype;
+const ownKeys = Object.keys;
 
-// node_modules/@splidejs/splide/src/js/utils/arrayLike/slice/slice.ts
-function slice2(arrayLike, start, end) {
-  return arrayProto2.slice.call(arrayLike, start, end);
-}
-
-// node_modules/@splidejs/splide/src/js/utils/object/forOwn/forOwn.ts
-function forOwn2(object, iteratee, right) {
+function forOwn(object, iteratee, right) {
   if (object) {
-    let keys = Object.keys(object);
+    let keys = ownKeys(object);
     keys = right ? keys.reverse() : keys;
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
@@ -181,41 +287,36 @@ function forOwn2(object, iteratee, right) {
   return object;
 }
 
-// node_modules/@splidejs/splide/src/js/utils/object/assign/assign.ts
-function assign2(object) {
-  slice2(arguments, 1).forEach((source) => {
-    forOwn2(source, (value, key) => {
+function assign(object) {
+  slice(arguments, 1).forEach((source) => {
+    forOwn(source, (value, key) => {
       object[key] = source[key];
     });
   });
   return object;
 }
 
-// node_modules/@splidejs/splide/src/js/utils/math/math/math.ts
-var { min: min2, max: max2, floor: floor2, ceil: ceil2, abs: abs2 } = Math;
+const { min, max, floor, ceil, abs } = Math;
 
-// node_modules/@splidejs/splide/src/js/utils/math/clamp/clamp.ts
-function clamp2(number, x, y) {
-  const minimum = min2(x, y);
-  const maximum = max2(x, y);
-  return min2(max2(minimum, number), maximum);
+function clamp(number, x, y) {
+  const minimum = min(x, y);
+  const maximum = max(x, y);
+  return min(max(minimum, number), maximum);
 }
 
-// src/js/constants/defaults.ts
-var DEFAULTS2 = {
+const DEFAULTS = {
   speed: 1,
   autoStart: true,
   pauseOnHover: true,
   pauseOnFocus: true
 };
 
-// src/js/extensions/AutoScroll/AutoScroll.ts
-function AutoScroll(Splide3, Components2, options) {
-  const { on, off, bind, unbind } = EventInterface(Splide3);
+function AutoScroll(Splide2, Components2, options) {
+  const { on, off, bind, unbind } = EventInterface(Splide2);
   const { translate, getPosition, toIndex, getLimit } = Components2.Move;
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
-  const { root } = Splide3;
+  const { root } = Splide2;
   let autoScrollOptions = {};
   let interval;
   let paused;
@@ -225,7 +326,7 @@ function AutoScroll(Splide3, Components2, options) {
   let currPosition;
   function setup() {
     const { autoScroll } = options;
-    autoScrollOptions = assign2({}, DEFAULTS2, isObject2(autoScroll) ? autoScroll : {});
+    autoScrollOptions = assign({}, DEFAULTS, isObject(autoScroll) ? autoScroll : {});
   }
   function mount() {
     if (!interval && options.autoScroll !== false) {
@@ -269,12 +370,12 @@ function AutoScroll(Splide3, Components2, options) {
   function update() {
     const { autoScroll } = options;
     if (autoScroll !== false) {
-      autoScrollOptions = assign2(autoScrollOptions, isObject2(autoScroll) ? autoScroll : {});
+      autoScrollOptions = assign(autoScrollOptions, isObject(autoScroll) ? autoScroll : {});
       mount();
     } else {
       destroy();
     }
-    if (interval && !isUndefined2(currPosition)) {
+    if (interval && !isUndefined(currPosition)) {
       translate(currPosition);
     }
   }
@@ -317,20 +418,20 @@ function AutoScroll(Splide3, Components2, options) {
     } else {
       pause(false);
       if (autoScrollOptions.rewind) {
-        Splide3.go(0);
+        Splide2.go(0);
       }
     }
   }
   function computeDestination(position) {
     const speed = autoScrollOptions.speed || 1;
     position += orient(speed);
-    if (Splide3.is(SLIDE2)) {
-      position = clamp2(position, getLimit(false), getLimit(true));
+    if (Splide2.is(SLIDE)) {
+      position = clamp(position, getLimit(false), getLimit(true));
     }
     return position;
   }
   function updateIndex(position) {
-    const { length } = Splide3;
+    const { length } = Splide2;
     const index = (toIndex(position) + length) % length;
     if (index !== getIndex()) {
       setIndex(index);
@@ -338,19 +439,17 @@ function AutoScroll(Splide3, Components2, options) {
       Components2.Pagination.update();
     }
   }
+  function isPaused() {
+    return !interval || interval.isPaused();
+  }
   return {
     setup,
     mount,
     destroy,
     play,
-    pause
+    pause,
+    isPaused
   };
 }
-/*!
- * Splide.js
- * Version  : 3.6.11
- * License  : MIT
- * Copyright: 2022 Naotoshi Fujita
- */
 
 exports.AutoScroll = AutoScroll;
