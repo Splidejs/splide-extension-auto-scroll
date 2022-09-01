@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.4.2
+ * Version  : 0.5.0
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
@@ -467,9 +467,8 @@ function AutoScroll(Splide2, Components2, options) {
     const position = getPosition();
     const destination = computeDestination(position);
     if (position !== destination) {
-      translate(destination, getIndex() !== 0 || !exceededLimit(true));
-      currPosition = getPosition();
-      updateIndex(currPosition);
+      translate(destination);
+      updateIndex(currPosition = getPosition());
     } else {
       pause(false);
       if (autoScrollOptions.rewind) {

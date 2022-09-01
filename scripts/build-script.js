@@ -14,13 +14,13 @@ function buildScript( compress ) {
     input: './src/js/build/default.ts',
     plugins: [
       resolve(),
-      esbuild( { minify: false, experimentalBundling: true } ),
+      esbuild( { minify: false } ),
       babel.getBabelOutputPlugin( {
         configFile     : path.resolve( __dirname, '../babel.config.js' ),
         allowAllFormats: true,
       } ),
 	    esbuild( { minify: compress } ),
-    ]
+    ],
   } ).then( bundle => {
     return bundle.write( {
       banner,

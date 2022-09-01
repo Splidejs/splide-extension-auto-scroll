@@ -254,9 +254,8 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
     const destination = computeDestination( position );
 
     if ( position !== destination ) {
-      translate( destination, getIndex() !== 0 || ! exceededLimit( true ) );
-      currPosition = getPosition();
-      updateIndex( currPosition );
+      translate( destination );
+      updateIndex( ( currPosition = getPosition() ) );
     } else {
       pause( false );
 

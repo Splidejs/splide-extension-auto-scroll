@@ -11,32 +11,36 @@
 
 	<script>
 		document.addEventListener( 'DOMContentLoaded', function () {
-			var splide = new Splide( '#splide01', {
+			var splide1 = new Splide( '#splide01', {
 				width  : 600,
 				height : 300,
 				gap    : '1rem',
         drag   : 'free',
+        type   : 'loop',
         autoScroll: {
           useToggleButton: true,
           // autoStart: false,
-          speed: 2,
+          // speed: -3,
           rewind: true,
         },
-        breakpoints: {
-          1000: {
-            autoScroll: {
-              speed: 5,
-            },
-          },
-          900: {
-            autoScroll: false,
-          }
-        }
+        reducedMotion: {
+          autoScroll: false,
+        },
+        // breakpoints: {
+        //   1000: {
+        //     autoScroll: {
+        //       speed: 5,
+        //     },
+        //   },
+        //   900: {
+        //     autoScroll: false,
+        //   }
+        // }
 			} );
 
       // splide.Components.AutoScroll.play();
 
-			splide.mount( window.splide.Extensions );
+      splide1.mount( window.splide.Extensions );
 
       // splide.on( 'scroll', () => console.log( 'scroll' ) );
       // splide.on( 'scrolled', () => console.log( 'scrolled' ) );
@@ -64,7 +68,7 @@
 	<div class="splide__track">
 		<ul class="splide__list">
 			<?php
-			for ( $i = 0; $i < 10; $i ++ ) {
+			for ( $i = 0; $i < 3; $i++ ) {
 				echo '<li class="splide__slide">' . PHP_EOL;
 				echo $i + 1;
 				echo '</li>' . PHP_EOL;

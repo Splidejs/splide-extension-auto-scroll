@@ -10,8 +10,8 @@ function buildModule( type ) {
     input: './src/js/index.ts',
     plugins: [
       resolve(),
-      esbuild( { experimentalBundling: true } ),
-    ]
+      esbuild(),
+    ],
   } ).then( bundle => {
     return bundle.write( {
       banner,
