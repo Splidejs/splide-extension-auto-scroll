@@ -32,4 +32,4 @@ Or download files from the dist directory.
 
 ## License
 Splide is released under the MIT license.
-© 2021 Naotoshi Fujita
+© 2022 Naotoshi Fujita
