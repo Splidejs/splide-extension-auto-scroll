@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.5.0
+ * Version  : 0.5.1
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
@@ -355,7 +355,7 @@ const I18N = {
 
 function AutoScroll(Splide2, Components2, options) {
   const { on, off, bind, unbind } = EventInterface(Splide2);
-  const { translate, getPosition, toIndex, getLimit, exceededLimit } = Components2.Move;
+  const { translate, getPosition, toIndex, getLimit } = Components2.Move;
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
   const { toggle } = Components2.Elements;
@@ -491,6 +491,7 @@ function AutoScroll(Splide2, Components2, options) {
       setIndex(index);
       Components2.Slides.update();
       Components2.Pagination.update();
+      options.lazyLoad === "nearby" && Components2.LazyLoad.check();
     }
   }
   function updateButton() {

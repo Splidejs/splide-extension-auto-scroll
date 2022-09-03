@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.5.0
+ * Version  : 0.5.1
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
@@ -379,8 +379,7 @@
         translate = _Components2$Move.translate,
         getPosition = _Components2$Move.getPosition,
         toIndex = _Components2$Move.toIndex,
-        getLimit = _Components2$Move.getLimit,
-        exceededLimit = _Components2$Move.exceededLimit;
+        getLimit = _Components2$Move.getLimit;
     var _Components2$Controll = Components2.Controller,
         setIndex = _Components2$Controll.setIndex,
         getIndex = _Components2$Controll.getIndex;
@@ -545,6 +544,7 @@
         setIndex(index);
         Components2.Slides.update();
         Components2.Pagination.update();
+        options.lazyLoad === "nearby" && Components2.LazyLoad.check();
       }
     }
 

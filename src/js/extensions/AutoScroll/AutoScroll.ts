@@ -59,7 +59,7 @@ export interface AutoScrollComponent extends BaseComponent {
  */
 export function AutoScroll( Splide: Splide, Components: Components, options: Options ): AutoScrollComponent {
   const { on, off, bind, unbind } = EventInterface( Splide );
-  const { translate, getPosition, toIndex, getLimit, exceededLimit } = Components.Move;
+  const { translate, getPosition, toIndex, getLimit } = Components.Move;
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
   const { toggle } = Components.Elements;
@@ -284,7 +284,10 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   }
 
   /**
-   * Updates index.
+   * Updates index and notify them to other components.
+   * - Slides: Activity and visibility
+   * - Pagination: Updates the active item
+   * - LazyLoad: Load close images if necessary
    *
    * @param position - A current position.
    */
@@ -296,6 +299,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       setIndex( index );
       Components.Slides.update();
       Components.Pagination.update();
+      options.lazyLoad === 'nearby' && Components.LazyLoad.check();
     }
   }
 
