@@ -2,7 +2,7 @@ import {
   BaseComponent,
   CLASS_ACTIVE,
   Components,
-  EVENT_DRAG,
+  EVENT_DRAG, EVENT_DRAGGED,
   EVENT_MOVE,
   EVENT_MOVED,
   EVENT_SCROLL,
@@ -169,7 +169,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       pause( false );
     } );
 
-    on( [ EVENT_MOVED, EVENT_SCROLLED ], () => {
+    on( [ EVENT_MOVED, EVENT_DRAGGED, EVENT_SCROLLED ], () => {
       busy = false;
       autoToggle();
     } );

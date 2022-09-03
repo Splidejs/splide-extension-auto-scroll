@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.5.1
+ * Version  : 0.5.2
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
@@ -147,6 +147,7 @@
   var EVENT_MOVED = "moved";
   var EVENT_UPDATED = "updated";
   var EVENT_DRAG = "drag";
+  var EVENT_DRAGGED = "dragged";
   var EVENT_SCROLL = "scroll";
   var EVENT_SCROLLED = "scrolled";
   var EVENT_DESTROY = "destroy";
@@ -447,7 +448,7 @@
         busy = true;
         pause(false);
       });
-      on([EVENT_MOVED, EVENT_SCROLLED], function () {
+      on([EVENT_MOVED, EVENT_DRAGGED, EVENT_SCROLLED], function () {
         busy = false;
         autoToggle();
       });
