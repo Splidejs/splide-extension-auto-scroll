@@ -12,6 +12,7 @@ import {
   FADE,
   Options,
   RequestInterval,
+  Throttle,
   RequestIntervalInterface,
   SLIDE,
   Splide,
@@ -65,6 +66,11 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   const { toggle } = Components.Elements;
   const { Live } = Components;
   const { root } = Splide;
+
+  /**
+   * The throttled function to update arrows.
+   */
+  const throttledUpdateArrows = Throttle( Components.Arrows.update, 500 );
 
   /**
    * Keeps the latest options.
@@ -260,9 +266,11 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       pause( false );
 
       if ( autoScrollOptions.rewind ) {
-        Splide.go( 0 );
+        Splide.go( autoScrollOptions.speed > 0 ? 0 : Components.Controller.getEnd() );
       }
     }
+
+    throttledUpdateArrows();
   }
 
   /**

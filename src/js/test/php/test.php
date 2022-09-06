@@ -16,11 +16,12 @@
 				height : 300,
 				gap    : '1rem',
         drag   : 'free',
-        type   : 'loop',
+        // type   : 'loop',
+        perPage: 3,
         autoScroll: {
           useToggleButton: true,
           // autoStart: false,
-          // speed: -3,
+          speed: 1,
           rewind: true,
         },
         reducedMotion: {
@@ -68,7 +69,7 @@
 	<div class="splide__track">
 		<ul class="splide__list">
 			<?php
-			for ( $i = 0; $i < 3; $i++ ) {
+			for ( $i = 0; $i < 9; $i++ ) {
 				echo '<li class="splide__slide">' . PHP_EOL;
 				echo $i + 1;
 				echo '</li>' . PHP_EOL;

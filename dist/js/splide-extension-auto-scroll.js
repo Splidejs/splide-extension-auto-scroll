@@ -249,6 +249,22 @@
     };
   }
 
+  function Throttle(func, duration) {
+    var interval;
+
+    function throttled() {
+      if (!interval) {
+        interval = RequestInterval(duration || 0, function () {
+          func();
+          interval = null;
+        }, null, 1);
+        interval.start();
+      }
+    }
+
+    return throttled;
+  }
+
   var CLASS_ACTIVE = "is-active";
   var SLIDE = "slide";
   var FADE = "fade";
@@ -388,6 +404,7 @@
     var toggle = Components2.Elements.toggle;
     var Live = Components2.Live;
     var root = Splide2.root;
+    var throttledUpdateArrows = Throttle(Components2.Arrows.update, 500);
     var autoScrollOptions = {};
     var interval;
     var stopped;
@@ -521,9 +538,11 @@
         pause(false);
 
         if (autoScrollOptions.rewind) {
-          Splide2.go(0);
+          Splide2.go(autoScrollOptions.speed > 0 ? 0 : Components2.Controller.getEnd());
         }
       }
+
+      throttledUpdateArrows();
     }
 
     function computeDestination(position) {

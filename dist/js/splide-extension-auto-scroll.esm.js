@@ -1,6 +1,6 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.5.2
+ * Version  : 0.5.3
  * License  : MIT
  * Copyright: 2022 Naotoshi Fujita
  */
@@ -242,6 +242,22 @@ function RequestInterval(interval, onInterval, onUpdate, limit) {
     isPaused: isPaused
   };
 }
+
+function Throttle(func, duration) {
+  var interval;
+
+  function throttled() {
+    if (!interval) {
+      interval = RequestInterval(duration || 0, function () {
+        func();
+        interval = null;
+      }, null, 1);
+      interval.start();
+    }
+  }
+
+  return throttled;
+}
 var CLASS_ACTIVE = "is-active";
 
 var SLIDE = "slide";
@@ -362,6 +378,7 @@ function AutoScroll(Splide2, Components2, options) {
   const { toggle } = Components2.Elements;
   const { Live } = Components2;
   const { root } = Splide2;
+  const throttledUpdateArrows = Throttle(Components2.Arrows.update, 500);
   let autoScrollOptions = {};
   let interval;
   let stopped;
@@ -473,9 +490,10 @@ function AutoScroll(Splide2, Components2, options) {
     } else {
       pause(false);
       if (autoScrollOptions.rewind) {
-        Splide2.go(0);
+        Splide2.go(autoScrollOptions.speed > 0 ? 0 : Components2.Controller.getEnd());
       }
     }
+    throttledUpdateArrows();
   }
   function computeDestination(position) {
     const speed = autoScrollOptions.speed || 1;
