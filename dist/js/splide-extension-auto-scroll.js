@@ -554,9 +554,9 @@
 
       if (autoScrollOptions.fpsLock) {
         var timePassed = Date.now() - baseTime;
-        var framesPassed = Math.floor(timePassed * autoScrollOptions.fpsLock / 1e3);
-        var expectedPositionAtPassedFrames = framesPassed * speed + basePosition;
-        position += orient(expectedPositionAtPassedFrames - position);
+        var framesPassed = timePassed * autoScrollOptions.fpsLock / 1e3;
+        var expectedPositionAtPassedFrames = orient(framesPassed * speed) + basePosition;
+        position = expectedPositionAtPassedFrames;
       } else {
         position += orient(speed);
       }

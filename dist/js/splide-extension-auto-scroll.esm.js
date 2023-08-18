@@ -503,9 +503,9 @@ function AutoScroll(Splide2, Components2, options) {
     const speed = autoScrollOptions.speed || 1;
     if (autoScrollOptions.fpsLock) {
       const timePassed = Date.now() - baseTime;
-      const framesPassed = Math.floor(timePassed * autoScrollOptions.fpsLock / 1e3);
-      const expectedPositionAtPassedFrames = framesPassed * speed + basePosition;
-      position += orient(expectedPositionAtPassedFrames - position);
+      const framesPassed = timePassed * autoScrollOptions.fpsLock / 1e3;
+      const expectedPositionAtPassedFrames = orient(framesPassed * speed) + basePosition;
+      position = expectedPositionAtPassedFrames;
     } else {
       position += orient(speed);
     }
