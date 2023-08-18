@@ -380,6 +380,7 @@ function AutoScroll(Splide2, Components2, options) {
   const { setIndex, getIndex } = Components2.Controller;
   const { orient } = Components2.Direction;
   const { toggle } = Components2.Elements;
+  const { listSize } = Components2.Layout;
   const { Live } = Components2;
   const { root } = Splide2;
   const throttledUpdateArrows = Throttle(Components2.Arrows.update, 500);
@@ -505,13 +506,17 @@ function AutoScroll(Splide2, Components2, options) {
   }
   function computeDestination(position) {
     const speed = autoScrollOptions.speed || 1;
+    const virtualViewportSize = autoScrollOptions.virtualViewportSize || 1e3;
+    const realViewportSize = listSize();
+    const virtualToRealScale = realViewportSize / virtualViewportSize;
+    const speedScale = autoScrollOptions.virtualSpeed ? virtualToRealScale : 1;
     if (autoScrollOptions.fpsLock) {
       const timePassed = Date.now() - baseTime;
       const framesPassed = timePassed * autoScrollOptions.fpsLock / 1e3;
-      const expectedPositionAtPassedFrames = orient(framesPassed * speed) + basePosition;
+      const expectedPositionAtPassedFrames = orient(framesPassed * speed * speedScale) + basePosition;
       position = expectedPositionAtPassedFrames;
     } else {
-      position += orient(speed);
+      position += orient(speed * speedScale);
     }
     if (Splide2.is(SLIDE)) {
       position = clamp(position, getLimit(false), getLimit(true));

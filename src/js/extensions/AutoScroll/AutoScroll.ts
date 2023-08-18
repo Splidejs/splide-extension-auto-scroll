@@ -64,6 +64,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   const { setIndex, getIndex } = Components.Controller;
   const { orient } = Components.Direction;
   const { toggle } = Components.Elements;
+  const { listSize } = Components.Layout;
   const { Live } = Components;
   const { root } = Splide;
 
@@ -294,13 +295,17 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    */
   function computeDestination( position: number ): number {
     const speed = autoScrollOptions.speed || 1;
+    const virtualViewportSize = autoScrollOptions.virtualViewportSize || 1000;
+    const realViewportSize = listSize();
+    const virtualToRealScale = realViewportSize / virtualViewportSize;
+    const speedScale = autoScrollOptions.virtualSpeed ? virtualToRealScale : 1;
     if (autoScrollOptions.fpsLock) {
       const timePassed = Date.now() - baseTime;
       const framesPassed = timePassed * autoScrollOptions.fpsLock / 1000.0;
-      const expectedPositionAtPassedFrames = orient(framesPassed * speed) + basePosition;
+      const expectedPositionAtPassedFrames = orient(framesPassed * speed * speedScale) + basePosition;
       position = expectedPositionAtPassedFrames;
     } else {
-      position += orient(speed);
+      position += orient(speed * speedScale);
     }
 
     if ( Splide.is( SLIDE ) ) {

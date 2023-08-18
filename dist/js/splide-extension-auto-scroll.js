@@ -402,6 +402,7 @@
         getIndex = _Components2$Controll.getIndex;
     var orient = Components2.Direction.orient;
     var toggle = Components2.Elements.toggle;
+    var listSize = Components2.Layout.listSize;
     var Live = Components2.Live;
     var root = Splide2.root;
     var throttledUpdateArrows = Throttle(Components2.Arrows.update, 500);
@@ -551,14 +552,18 @@
 
     function computeDestination(position) {
       var speed = autoScrollOptions.speed || 1;
+      var virtualViewportSize = autoScrollOptions.virtualViewportSize || 1e3;
+      var realViewportSize = listSize();
+      var virtualToRealScale = realViewportSize / virtualViewportSize;
+      var speedScale = autoScrollOptions.virtualSpeed ? virtualToRealScale : 1;
 
       if (autoScrollOptions.fpsLock) {
         var timePassed = Date.now() - baseTime;
         var framesPassed = timePassed * autoScrollOptions.fpsLock / 1e3;
-        var expectedPositionAtPassedFrames = orient(framesPassed * speed) + basePosition;
+        var expectedPositionAtPassedFrames = orient(framesPassed * speed * speedScale) + basePosition;
         position = expectedPositionAtPassedFrames;
       } else {
-        position += orient(speed);
+        position += orient(speed * speedScale);
       }
 
       if (Splide2.is(SLIDE)) {
