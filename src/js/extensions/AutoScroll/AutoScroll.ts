@@ -119,7 +119,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   let basePosition: number;
 
   /**
-   * Keeps the last render time to skip frames in case it is called to frequent for a specified fpsLock value
+   * Keeps the last render time to skip frames in case it is called too frequent for a specified fpsLock value
    */
   let lastRenderTime: number | undefined;
 
