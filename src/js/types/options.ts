@@ -10,6 +10,11 @@ export interface AutoScrollOptions {
   speed?: number;
 
   /**
+   * The FPS upon which scroll speed is calculated.
+   */
+  fpsLock?: number;
+
+  /**
    * Determines whether to start scrolling the slider after initialization.
    */
   autoStart?: boolean;

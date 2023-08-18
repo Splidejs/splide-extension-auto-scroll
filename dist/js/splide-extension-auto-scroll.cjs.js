@@ -2,7 +2,7 @@
  * @splidejs/splide-extension-auto-scroll
  * Version  : 0.5.3
  * License  : MIT
- * Copyright: 2022 Naotoshi Fujita
+ * Copyright: 2023 Naotoshi Fujita
  */
 'use strict';
 
@@ -390,6 +390,8 @@ function AutoScroll(Splide2, Components2, options) {
   let focused;
   let busy;
   let currPosition;
+  let baseTime;
+  let basePosition;
   function setup() {
     const { autoScroll } = options;
     autoScrollOptions = assign({}, DEFAULTS, isObject(autoScroll) ? autoScroll : {});
@@ -468,6 +470,8 @@ function AutoScroll(Splide2, Components2, options) {
       Live.disable(true);
       focused = hovered = stopped = false;
       updateButton();
+      baseTime = Date.now();
+      basePosition = getPosition();
     }
   }
   function pause(stop = true) {
@@ -501,7 +505,14 @@ function AutoScroll(Splide2, Components2, options) {
   }
   function computeDestination(position) {
     const speed = autoScrollOptions.speed || 1;
-    position += orient(speed);
+    if (autoScrollOptions.fpsLock) {
+      const timePassed = Date.now() - baseTime;
+      const framesPassed = Math.floor(timePassed * autoScrollOptions.fpsLock / 1e3);
+      const expectedPositionAtPassedFrames = framesPassed * speed + basePosition;
+      position += orient(expectedPositionAtPassedFrames - position);
+    } else {
+      position += orient(speed);
+    }
     if (Splide2.is(SLIDE)) {
       position = clamp(position, getLimit(false), getLimit(true));
     }

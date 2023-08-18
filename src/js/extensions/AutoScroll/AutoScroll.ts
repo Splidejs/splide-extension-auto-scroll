@@ -108,6 +108,16 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   let currPosition: number;
 
   /**
+   * Keeps the time when play() is called to adjust position calculations in case of fpsLock option
+   */
+  let baseTime: number;
+
+  /**
+   * Keeps the position at which play() is called to adjust position calculations in case of fpsLock option
+   */
+  let basePosition: number;
+
+  /**
    * Sets up the component.
    */
   function setup(): void {
@@ -223,6 +233,8 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       Live.disable( true );
       focused = hovered = stopped = false;
       updateButton();
+      baseTime = Date.now();
+      basePosition = getPosition();
     }
   }
 
@@ -282,7 +294,14 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    */
   function computeDestination( position: number ): number {
     const speed = autoScrollOptions.speed || 1;
-    position += orient( speed );
+    if (autoScrollOptions.fpsLock) {
+      const timePassed = Date.now() - baseTime;
+      const framesPassed = Math.floor(timePassed * autoScrollOptions.fpsLock / 1000);
+      const expectedPositionAtPassedFrames = framesPassed * speed + basePosition;
+      position += orient(expectedPositionAtPassedFrames - position);
+    } else {
+      position += orient(speed);
+    }
 
     if ( Splide.is( SLIDE ) ) {
       position = clamp( position, getLimit( false ), getLimit( true ) );
