@@ -415,10 +415,13 @@
     var currPosition;
     var baseTime;
     var basePosition;
+    var lastRenderTime;
+    var msPerFrame;
 
     function setup() {
       var autoScroll = options.autoScroll;
       autoScrollOptions = assign({}, DEFAULTS, isObject(autoScroll) ? autoScroll : {});
+      msPerFrame = autoScrollOptions.fpsLock ? 1e3 / autoScrollOptions.fpsLock : void 0;
     }
 
     function mount() {
@@ -507,6 +510,7 @@
         updateButton();
         baseTime = Date.now();
         basePosition = getPosition();
+        lastRenderTime = void 0;
       }
     }
 
@@ -535,6 +539,7 @@
     function move() {
       var position = getPosition();
       var destination = computeDestination(position);
+      if (destination === null) return;
 
       if (position !== destination) {
         translate(destination);
@@ -551,6 +556,12 @@
     }
 
     function computeDestination(position) {
+      var currentTimestamp = Date.now();
+
+      if (autoScrollOptions.fpsLock && lastRenderTime && currentTimestamp - lastRenderTime < msPerFrame / 2) {
+        return null;
+      }
+
       var speed = autoScrollOptions.speed || 1;
       var virtualViewportSize = autoScrollOptions.virtualViewportSize || 1e3;
       var realViewportSize = listSize();
@@ -558,10 +569,16 @@
       var speedScale = autoScrollOptions.virtualSpeed ? virtualToRealScale : 1;
 
       if (autoScrollOptions.fpsLock) {
-        var timePassed = Date.now() - baseTime;
+        var timePassed = currentTimestamp - baseTime;
         var framesPassed = timePassed * autoScrollOptions.fpsLock / 1e3;
         var expectedPositionAtPassedFrames = orient(framesPassed * speed * speedScale) + basePosition;
-        position = expectedPositionAtPassedFrames;
+
+        if (expectedPositionAtPassedFrames !== position) {
+          position = expectedPositionAtPassedFrames;
+          lastRenderTime = currentTimestamp;
+        } else {
+          return null;
+        }
       } else {
         position += orient(speed * speedScale);
       }

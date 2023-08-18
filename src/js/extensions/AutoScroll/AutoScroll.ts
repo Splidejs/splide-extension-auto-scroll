@@ -119,11 +119,22 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
   let basePosition: number;
 
   /**
+   * Keeps the last render time to skip frames in case it is called to frequent for a specified fpsLock value
+   */
+  let lastRenderTime: number | undefined;
+
+  /**
+   * Keeps the amount of ms that should pass between renders to reduce extra calculations when fpsLock is set
+   */
+  let msPerFrame: number | undefined;
+
+  /**
    * Sets up the component.
    */
   function setup(): void {
     const { autoScroll } = options;
     autoScrollOptions = assign( {}, DEFAULTS, isObject( autoScroll ) ? autoScroll : {} );
+    msPerFrame = autoScrollOptions.fpsLock ? ( 1000 / autoScrollOptions.fpsLock ) : undefined;
   }
 
   /**
@@ -236,6 +247,7 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
       updateButton();
       baseTime = Date.now();
       basePosition = getPosition();
+      lastRenderTime = undefined;
     }
   }
 
@@ -272,6 +284,9 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
     const position    = getPosition();
     const destination = computeDestination( position );
 
+    // null value means this frame should be skipped
+    if (destination === null) return;
+
     if ( position !== destination ) {
       translate( destination );
       updateIndex( ( currPosition = getPosition() ) );
@@ -291,19 +306,34 @@ export function AutoScroll( Splide: Splide, Components: Components, options: Opt
    *
    * @param position - The current position.
    *
-   * @return A computed destination.
+   * @return A computed destination or null if frame transition should be skipped
    */
-  function computeDestination( position: number ): number {
+  function computeDestination( position: number ): number | null {
+    const currentTimestamp = Date.now();
+    if (autoScrollOptions.fpsLock
+        // always render first frame after play()
+        && lastRenderTime
+        // extra tolerance for a smoother experience
+        && (currentTimestamp - lastRenderTime) < msPerFrame / 2) {
+      // not enough time has passed since last render and this frame must be skipped
+      return null;
+    }
     const speed = autoScrollOptions.speed || 1;
     const virtualViewportSize = autoScrollOptions.virtualViewportSize || 1000;
     const realViewportSize = listSize();
     const virtualToRealScale = realViewportSize / virtualViewportSize;
     const speedScale = autoScrollOptions.virtualSpeed ? virtualToRealScale : 1;
     if (autoScrollOptions.fpsLock) {
-      const timePassed = Date.now() - baseTime;
+      const timePassed = currentTimestamp - baseTime;
       const framesPassed = timePassed * autoScrollOptions.fpsLock / 1000.0;
       const expectedPositionAtPassedFrames = orient(framesPassed * speed * speedScale) + basePosition;
-      position = expectedPositionAtPassedFrames;
+      if (expectedPositionAtPassedFrames !== position) {
+        position = expectedPositionAtPassedFrames;
+        lastRenderTime = currentTimestamp;
+      } else {
+        // position change is too small and this frame must be skipped
+        return null;
+      }
     } else {
       position += orient(speed * speedScale);
     }
