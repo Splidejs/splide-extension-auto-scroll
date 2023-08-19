@@ -1,8 +1,8 @@
 /*!
  * @splidejs/splide-extension-auto-scroll
- * Version  : 0.5.2
+ * Version  : 0.5.3
  * License  : MIT
- * Copyright: 2022 Naotoshi Fujita
+ * Copyright: 2023 Naotoshi Fujita
  */
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) : factory();
@@ -402,6 +402,7 @@
         getIndex = _Components2$Controll.getIndex;
     var orient = Components2.Direction.orient;
     var toggle = Components2.Elements.toggle;
+    var listSize = Components2.Layout.listSize;
     var Live = Components2.Live;
     var root = Splide2.root;
     var throttledUpdateArrows = Throttle(Components2.Arrows.update, 500);
@@ -412,10 +413,15 @@
     var focused;
     var busy;
     var currPosition;
+    var baseTime;
+    var basePosition;
+    var lastRenderTime;
+    var msPerFrame;
 
     function setup() {
       var autoScroll = options.autoScroll;
       autoScrollOptions = assign({}, DEFAULTS, isObject(autoScroll) ? autoScroll : {});
+      msPerFrame = autoScrollOptions.fpsLock ? 1e3 / autoScrollOptions.fpsLock : void 0;
     }
 
     function mount() {
@@ -502,6 +508,9 @@
         Live.disable(true);
         focused = hovered = stopped = false;
         updateButton();
+        baseTime = Date.now();
+        basePosition = getPosition();
+        lastRenderTime = void 0;
       }
     }
 
@@ -530,6 +539,7 @@
     function move() {
       var position = getPosition();
       var destination = computeDestination(position);
+      if (destination === null) return;
 
       if (position !== destination) {
         translate(destination);
@@ -546,8 +556,32 @@
     }
 
     function computeDestination(position) {
+      var currentTimestamp = Date.now();
+
+      if (autoScrollOptions.fpsLock && lastRenderTime && currentTimestamp - lastRenderTime < msPerFrame / 2) {
+        return null;
+      }
+
       var speed = autoScrollOptions.speed || 1;
-      position += orient(speed);
+      var virtualViewportSize = autoScrollOptions.virtualViewportSize || 1e3;
+      var realViewportSize = listSize();
+      var virtualToRealScale = realViewportSize / virtualViewportSize;
+      var speedScale = autoScrollOptions.virtualSpeed ? virtualToRealScale : 1;
+
+      if (autoScrollOptions.fpsLock) {
+        var timePassed = currentTimestamp - baseTime;
+        var framesPassed = timePassed * autoScrollOptions.fpsLock / 1e3;
+        var expectedPositionAtPassedFrames = orient(framesPassed * speed * speedScale) + basePosition;
+
+        if (expectedPositionAtPassedFrames !== position) {
+          position = expectedPositionAtPassedFrames;
+          lastRenderTime = currentTimestamp;
+        } else {
+          return null;
+        }
+      } else {
+        position += orient(speed * speedScale);
+      }
 
       if (Splide2.is(SLIDE)) {
         position = clamp(position, getLimit(false), getLimit(true));

@@ -9,6 +9,20 @@ export interface AutoScrollOptions {
      */
     speed?: number;
     /**
+     * Determines if speed is set in real screen pixels or virtual viewport pixels.
+     */
+    virtualSpeed?: boolean;
+    /**
+     * The virtual viewport size that will scale to the real slider size to keep speed relative to the slider.
+     * With the virtualSpeed = true and the same virtualViewportSize - two different sliders will scroll the same
+     * number of slides on the same time
+     */
+    virtualViewportSize?: number;
+    /**
+     * The FPS upon which scroll speed is calculated.
+     */
+    fpsLock?: number;
+    /**
      * Determines whether to start scrolling the slider after initialization.
      */
     autoStart?: boolean;
